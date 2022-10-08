@@ -714,7 +714,6 @@ func (h *Handler) finalizeReshare(ctx context.Context, isCommonNode bool, out mi
 // and old and common nodes
 func (h *Handler) reshare(ctx context.Context, out mino.Sender,
 	from mino.Address, msg types.StartResharing, reshares cryChan[types.Reshare], resps cryChan[types.Response]) error {
-
 	err := h.startRes.switchState(resharing)
 	if err != nil {
 		return xerrors.Errorf("failed to switch state: %v", err)

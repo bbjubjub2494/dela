@@ -92,7 +92,7 @@ func Test_verifiableEncDec_minoch(t *testing.T) {
 
 	t.Log("decrypting the ciphertext ...")
 
-	decrypted, err := actors[0].VerifiableDecrypt(ciphertexts)
+	decrypted, _, _, err := actors[0].VerifiableDecrypt(ciphertexts)
 	require.NoError(t, err)
 	for i := 0; i < batchSize; i++ {
 		require.Equal(t, keys[i][:], decrypted[i])
@@ -107,7 +107,7 @@ func Test_verifiableEncDec_minogrpc(t *testing.T) {
 	batchSizeSlice := []int{32}
 
 	// setting up the dkg
-	n := 18
+	n := 64
 	threshold := n
 
 	minos := make([]mino.Mino, n)
@@ -124,6 +124,7 @@ func Test_verifiableEncDec_minogrpc(t *testing.T) {
 	GBar := suite.Point().Embed(agreedData, keccak.New(agreedData))
 
 	t.Log("initiating the dkg nodes ...")
+	fmt.Printf("initiating the dkg nodes ...")
 
 	for i := 0; i < n; i++ {
 		addr := minogrpc.ParseAddress("127.0.0.1", 0)
@@ -159,7 +160,7 @@ func Test_verifiableEncDec_minogrpc(t *testing.T) {
 	}
 
 	t.Log("setting up the dkg ...")
-
+	fmt.Printf("setting up the dkg ...")
 	start := time.Now()
 	_, err = actors[0].Setup(fakeAuthority, threshold)
 	require.NoError(t, err)
@@ -168,6 +169,7 @@ func Test_verifiableEncDec_minogrpc(t *testing.T) {
 	// generating random messages in batch and encrypt them
 	for i, batchSize := range batchSizeSlice {
 		t.Logf("=== starting the process with batch size = %d === \n", batchSize)
+		fmt.Printf("=== starting the process with batch size = %d === \n", batchSize)
 
 		workerNum = numWorkersSlice[i]
 
@@ -185,9 +187,10 @@ func Test_verifiableEncDec_minogrpc(t *testing.T) {
 		}
 
 		t.Log("decrypting the batch ...")
+		fmt.Printf("decrypting the batch ...")
 
 		start = time.Now()
-		decrypted, err := actors[0].VerifiableDecrypt(ciphertexts)
+		decrypted, _, _, err := actors[0].VerifiableDecrypt(ciphertexts)
 		decryptionTime := time.Since(start)
 		require.NoError(t, err)
 
@@ -196,6 +199,9 @@ func Test_verifiableEncDec_minogrpc(t *testing.T) {
 		}
 
 		t.Logf("n=%d, batchSize=%d, workerNum=%d, decryption time=%s, "+
+			"throughput=%v[tx/s], dkg setup time=%s", n, batchSize, workerNum,
+			decryptionTime, float64(batchSize)/decryptionTime.Seconds(), setupTime)
+		fmt.Printf("n=%d, batchSize=%d, workerNum=%d, decryption time=%s, "+
 			"throughput=%v[tx/s], dkg setup time=%s", n, batchSize, workerNum,
 			decryptionTime, float64(batchSize)/decryptionTime.Seconds(), setupTime)
 	}

@@ -334,10 +334,10 @@ func (a *Actor) Decrypt(K, C kyber.Point) ([]byte, error) {
 // it checks whether the decryption proofs are valid.
 //
 // See https://arxiv.org/pdf/2205.08529.pdf / section 5.4 Protocol / step 3
-func (a *Actor) VerifiableDecrypt(ciphertexts []types.Ciphertext) ([][]byte, error) {
+func (a *Actor) VerifiableDecrypt(ciphertexts []types.Ciphertext) ([][]byte, int64, int64, error) {
 
 	if !a.startRes.Done() {
-		return nil, xerrors.Errorf("you must first initialize DKG. " +
+		return nil, 0, 0, xerrors.Errorf("you must first initialize DKG. " +
 			"Did you call setup() first?")
 	}
 
@@ -349,7 +349,7 @@ func (a *Actor) VerifiableDecrypt(ciphertexts []types.Ciphertext) ([][]byte, err
 
 	sender, receiver, err := a.rpc.Stream(ctx, players)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to create stream: %v", err)
+		return nil, 0, 0, xerrors.Errorf("failed to create stream: %v", err)
 	}
 
 	players = mino.NewAddresses(a.startRes.getParticipants()...)
@@ -363,10 +363,11 @@ func (a *Actor) VerifiableDecrypt(ciphertexts []types.Ciphertext) ([][]byte, err
 	batchsize := len(ciphertexts)
 
 	message := types.NewVerifiableDecryptRequest(ciphertexts)
+	start := time.Now()
 	// sending the decrypt request to the nodes
 	err = <-sender.Send(message, addrs...)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to send verifiable decrypt request: %v", err)
+		return nil, 0, 0, xerrors.Errorf("failed to send verifiable decrypt request: %v", err)
 	}
 
 	responses := make([]types.VerifiableDecryptReply, len(addrs))
@@ -375,19 +376,22 @@ func (a *Actor) VerifiableDecrypt(ciphertexts []types.Ciphertext) ([][]byte, err
 	for i := range addrs {
 		from, message, err := receiver.Recv(ctx)
 		if err != nil {
-			return nil, xerrors.Errorf("stream stopped unexpectedly: %v", err)
+			return nil, 0, 0, xerrors.Errorf("stream stopped unexpectedly: %v", err)
 		}
 
 		dela.Logger.Debug().Msgf("received share from %v\n", from)
 
 		shareAndProof, ok := message.(types.VerifiableDecryptReply)
 		if !ok {
-			return nil, xerrors.Errorf("got unexpected reply, expected "+
+			return nil, 0, 0, xerrors.Errorf("got unexpected reply, expected "+
 				"%T but got: %T", shareAndProof, message)
 		}
 
 		responses[i] = shareAndProof
 	}
+
+	receivingSharesTime := time.Since(start).Milliseconds()
+	start = time.Now()
 
 	// the final decrypted message
 	decryptedMessage := make([][]byte, batchsize)
@@ -425,7 +429,9 @@ func (a *Actor) VerifiableDecrypt(ciphertexts []types.Ciphertext) ([][]byte, err
 
 	wgBatchReply.Wait()
 
-	return decryptedMessage, nil
+	decryptionTime := time.Since(start).Milliseconds()
+
+	return decryptedMessage, receivingSharesTime, decryptionTime, nil
 }
 
 func newWorker(numParticipants int, decryptedMessage [][]byte,
@@ -550,9 +556,11 @@ func (a *Actor) Reshare(co crypto.CollectiveAuthority, thresholdNew int) error {
 	dela.Logger.Info().Msgf("resharing to new participants: %v", newParticipants)
 
 	// Send the resharing request to the new but not common nodes
-	err = <-sender.Send(reshare, newParticipants...)
-	if err != nil {
-		return xerrors.Errorf("failed to send resharing request: %v", err)
+	if len(newParticipants) != 0 {
+		err = <-sender.Send(reshare, newParticipants...)
+		if err != nil {
+			return xerrors.Errorf("failed to send resharing request: %v", err)
+		}
 	}
 
 	dkgPubKeys := make([]kyber.Point, len(addrsAll))
