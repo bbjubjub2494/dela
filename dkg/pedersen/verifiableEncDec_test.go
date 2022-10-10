@@ -103,7 +103,7 @@ func Test_verifiableEncDec_minogrpc(t *testing.T) {
 	// we want to time the decryption for different batch sizes with different
 	// number of nodes
 
-	numWorkersSlice := []int{8}
+	//numWorkersSlice := []int{8}
 	batchSizeSlice := []int{32}
 
 	// setting up the dkg
@@ -167,11 +167,11 @@ func Test_verifiableEncDec_minogrpc(t *testing.T) {
 	setupTime := time.Since(start)
 
 	// generating random messages in batch and encrypt them
-	for i, batchSize := range batchSizeSlice {
+	for _, batchSize := range batchSizeSlice {
 		t.Logf("=== starting the process with batch size = %d === \n", batchSize)
 		fmt.Printf("=== starting the process with batch size = %d === \n", batchSize)
 
-		workerNum = numWorkersSlice[i]
+		//workerNum = numWorkersSlice[i]
 
 		keys := make([][29]byte, batchSize)
 		var ciphertexts []types.Ciphertext
@@ -198,11 +198,11 @@ func Test_verifiableEncDec_minogrpc(t *testing.T) {
 			require.Equal(t, keys[i][:], decrypted[i])
 		}
 
-		t.Logf("n=%d, batchSize=%d, workerNum=%d, decryption time=%s, "+
-			"throughput=%v[tx/s], dkg setup time=%s", n, batchSize, workerNum,
+		t.Logf("n=%d, batchSize=%d,  decryption time=%s, "+
+			"throughput=%v[tx/s], dkg setup time=%s", n, batchSize,
 			decryptionTime, float64(batchSize)/decryptionTime.Seconds(), setupTime)
-		fmt.Printf("n=%d, batchSize=%d, workerNum=%d, decryption time=%s, "+
-			"throughput=%v[tx/s], dkg setup time=%s", n, batchSize, workerNum,
+		fmt.Printf("n=%d, batchSize=%d, decryption time=%s, "+
+			"throughput=%v[tx/s], dkg setup time=%s", n, batchSize,
 			decryptionTime, float64(batchSize)/decryptionTime.Seconds(), setupTime)
 	}
 }

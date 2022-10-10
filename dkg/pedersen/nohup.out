@@ -1630,3 +1630,310 @@ n old =  128
 ==============  finishing the resharing ==============
 PASS
 ok  	go.dedis.ch/dela/dkg/pedersen	375.821s
+initiating the dkg nodes ...
+setting up the dkg ...
+=== starting the process with batch size = 1 === 
+decrypting the batch ...
+=== starting the process with batch size = 2 === 
+decrypting the batch ...
+=== starting the process with batch size = 4 === 
+decrypting the batch ...
+=== starting the process with batch size = 8 === 
+decrypting the batch ...
+=== starting the process with batch size = 16 === 
+decrypting the batch ...
+=== starting the process with batch size = 32 === 
+decrypting the batch ...
+=== starting the process with batch size = 64 === 
+decrypting the batch ...
+=== starting the process with batch size = 128 === 
+decrypting the batch ...
+=== starting the process with batch size = 256 === 
+decrypting the batch ...
+=== starting the process with batch size = 512 === 
+decrypting the batch ...
+=== starting the process with batch size = 1024 === 
+decrypting the batch ...
+PASS
+ok  	go.dedis.ch/dela/dkg/pedersen	197.398s
+initiating the dkg nodes ...
+setting up the dkg ...
+=== starting the process with batch size = 1 === 
+decrypting the batch ...
+=== starting the process with batch size = 2 === 
+decrypting the batch ...
+=== starting the process with batch size = 4 === 
+decrypting the batch ...
+=== starting the process with batch size = 8 === 
+decrypting the batch ...
+=== starting the process with batch size = 16 === 
+decrypting the batch ...
+=== starting the process with batch size = 32 === 
+decrypting the batch ...
+=== starting the process with batch size = 64 === 
+decrypting the batch ...
+=== starting the process with batch size = 128 === 
+decrypting the batch ...
+=== starting the process with batch size = 256 === 
+decrypting the batch ...
+=== starting the process with batch size = 512 === 
+decrypting the batch ...
+=== starting the process with batch size = 1024 === 
+decrypting the batch ...
+PASS
+ok  	go.dedis.ch/dela/dkg/pedersen	197.110s
+initiating the dkg nodes ...
+setting up the dkg ...
+=== starting the process with batch size = 1 === 
+decrypting the batch ...
+=== starting the process with batch size = 2 === 
+decrypting the batch ...
+=== starting the process with batch size = 4 === 
+decrypting the batch ...
+=== starting the process with batch size = 8 === 
+decrypting the batch ...
+=== starting the process with batch size = 16 === 
+decrypting the batch ...
+=== starting the process with batch size = 32 === 
+decrypting the batch ...
+=== starting the process with batch size = 64 === 
+decrypting the batch ...
+=== starting the process with batch size = 128 === 
+decrypting the batch ...
+=== starting the process with batch size = 256 === 
+decrypting the batch ...
+=== starting the process with batch size = 512 === 
+decrypting the batch ...
+=== starting the process with batch size = 1024 === 
+decrypting the batch ...
+PASS
+ok  	go.dedis.ch/dela/dkg/pedersen	12.184s
+initiating the dkg nodes ...
+setting up the dkg ...
+=== starting the process with batch size = 1 === 
+decrypting the batch ...
+=== starting the process with batch size = 2 === 
+decrypting the batch ...
+=== starting the process with batch size = 4 === 
+decrypting the batch ...
+=== starting the process with batch size = 8 === 
+decrypting the batch ...
+=== starting the process with batch size = 16 === 
+decrypting the batch ...
+=== starting the process with batch size = 32 === 
+decrypting the batch ...
+=== starting the process with batch size = 64 === 
+decrypting the batch ...
+=== starting the process with batch size = 128 === 
+decrypting the batch ...
+=== starting the process with batch size = 256 === 
+decrypting the batch ...
+=== starting the process with batch size = 512 === 
+decrypting the batch ...
+=== starting the process with batch size = 1024 === 
+decrypting the batch ...
+PASS
+ok  	go.dedis.ch/dela/dkg/pedersen	14.775s
+initiating the dkg nodes ...
+setting up the dkg ...
+=== starting the process with batch size = 1 === 
+decrypting the batch ...
+=== starting the process with batch size = 2 === 
+decrypting the batch ...
+=== starting the process with batch size = 4 === 
+decrypting the batch ...
+=== starting the process with batch size = 8 === 
+decrypting the batch ...
+=== starting the process with batch size = 16 === 
+decrypting the batch ...
+=== starting the process with batch size = 32 === 
+decrypting the batch ...
+=== starting the process with batch size = 64 === 
+decrypting the batch ...
+=== starting the process with batch size = 128 === 
+decrypting the batch ...
+=== starting the process with batch size = 256 === 
+decrypting the batch ...
+=== starting the process with batch size = 512 === 
+decrypting the batch ...
+=== starting the process with batch size = 1024 === 
+decrypting the batch ...
+PASS
+ok  	go.dedis.ch/dela/dkg/pedersen	22.199s
+initiating the dkg nodes ...
+setting up the dkg ...
+=== starting the process with batch size = 1 === 
+decrypting the batch ...
+=== starting the process with batch size = 2 === 
+decrypting the batch ...
+=== starting the process with batch size = 4 === 
+decrypting the batch ...
+=== starting the process with batch size = 8 === 
+decrypting the batch ...
+=== starting the process with batch size = 16 === 
+decrypting the batch ...
+=== starting the process with batch size = 32 === 
+decrypting the batch ...
+=== starting the process with batch size = 64 === 
+decrypting the batch ...
+=== starting the process with batch size = 128 === 
+decrypting the batch ...
+=== starting the process with batch size = 256 === 
+decrypting the batch ...
+=== starting the process with batch size = 512 === 
+decrypting the batch ...
+=== starting the process with batch size = 1024 === 
+decrypting the batch ...
+PASS
+ok  	go.dedis.ch/dela/dkg/pedersen	46.928s
+initiating the dkg nodes ...
+setting up the dkg ...
+=== starting the process with batch size = 1 === 
+decrypting the batch ...
+=== starting the process with batch size = 2 === 
+decrypting the batch ...
+=== starting the process with batch size = 4 === 
+decrypting the batch ...
+=== starting the process with batch size = 8 === 
+decrypting the batch ...
+=== starting the process with batch size = 16 === 
+decrypting the batch ...
+=== starting the process with batch size = 32 === 
+decrypting the batch ...
+=== starting the process with batch size = 64 === 
+decrypting the batch ...
+=== starting the process with batch size = 128 === 
+decrypting the batch ...
+=== starting the process with batch size = 256 === 
+decrypting the batch ...
+=== starting the process with batch size = 512 === 
+decrypting the batch ...
+=== starting the process with batch size = 1024 === 
+decrypting the batch ...
+PASS
+ok  	go.dedis.ch/dela/dkg/pedersen	196.229s
+--- FAIL: TestResharingRecords (0.00s)
+panic: not nNew right argument [recovered]
+	panic: not nNew right argument
+
+goroutine 7 [running]:
+testing.tRunner.func1.2({0xaf39a0, 0xd1a6f0})
+	/usr/local/go/src/testing/testing.go:1396 +0x24e
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1399 +0x39f
+panic({0xaf39a0, 0xd1a6f0})
+	/usr/local/go/src/runtime/panic.go:884 +0x212
+go.dedis.ch/dela/dkg/pedersen.TestResharingRecords(0xc000195a00?)
+	/home/mahsa/dela/dela/dkg/pedersen/resharing_records_test.go:67 +0x2398
+testing.tRunner(0xc000195a00, 0xc583a0)
+	/usr/local/go/src/testing/testing.go:1446 +0x10b
+created by testing.(*T).Run
+	/usr/local/go/src/testing/testing.go:1493 +0x35f
+exit status 2
+FAIL	go.dedis.ch/dela/dkg/pedersen	0.058s
+--- FAIL: TestResharingRecords (0.00s)
+panic: not nNew right argument [recovered]
+	panic: not nNew right argument
+
+goroutine 22 [running]:
+testing.tRunner.func1.2({0xaf39a0, 0xd1a6f0})
+	/usr/local/go/src/testing/testing.go:1396 +0x24e
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1399 +0x39f
+panic({0xaf39a0, 0xd1a6f0})
+	/usr/local/go/src/runtime/panic.go:884 +0x212
+go.dedis.ch/dela/dkg/pedersen.TestResharingRecords(0xc0002e89c0?)
+	/home/mahsa/dela/dela/dkg/pedersen/resharing_records_test.go:67 +0x2398
+testing.tRunner(0xc0002e89c0, 0xc583a0)
+	/usr/local/go/src/testing/testing.go:1446 +0x10b
+created by testing.(*T).Run
+	/usr/local/go/src/testing/testing.go:1493 +0x35f
+exit status 2
+FAIL	go.dedis.ch/dela/dkg/pedersen	0.059s
+--- FAIL: TestResharingRecords (0.00s)
+panic: not nNew right argument [recovered]
+	panic: not nNew right argument
+
+goroutine 7 [running]:
+testing.tRunner.func1.2({0xaf39a0, 0xd1a6f0})
+	/usr/local/go/src/testing/testing.go:1396 +0x24e
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1399 +0x39f
+panic({0xaf39a0, 0xd1a6f0})
+	/usr/local/go/src/runtime/panic.go:884 +0x212
+go.dedis.ch/dela/dkg/pedersen.TestResharingRecords(0xc000115ba0?)
+	/home/mahsa/dela/dela/dkg/pedersen/resharing_records_test.go:67 +0x2398
+testing.tRunner(0xc000115ba0, 0xc583a0)
+	/usr/local/go/src/testing/testing.go:1446 +0x10b
+created by testing.(*T).Run
+	/usr/local/go/src/testing/testing.go:1493 +0x35f
+exit status 2
+FAIL	go.dedis.ch/dela/dkg/pedersen	0.055s
+--- FAIL: TestResharingRecords (0.00s)
+panic: not nNew right argument [recovered]
+	panic: not nNew right argument
+
+goroutine 7 [running]:
+testing.tRunner.func1.2({0xaf39a0, 0xd1a6f0})
+	/usr/local/go/src/testing/testing.go:1396 +0x24e
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1399 +0x39f
+panic({0xaf39a0, 0xd1a6f0})
+	/usr/local/go/src/runtime/panic.go:884 +0x212
+go.dedis.ch/dela/dkg/pedersen.TestResharingRecords(0xc000195ba0?)
+	/home/mahsa/dela/dela/dkg/pedersen/resharing_records_test.go:67 +0x2398
+testing.tRunner(0xc000195ba0, 0xc583a0)
+	/usr/local/go/src/testing/testing.go:1446 +0x10b
+created by testing.(*T).Run
+	/usr/local/go/src/testing/testing.go:1493 +0x35f
+exit status 2
+FAIL	go.dedis.ch/dela/dkg/pedersen	0.052s
+--- FAIL: TestResharingRecords (0.00s)
+panic: not nNew right argument [recovered]
+	panic: not nNew right argument
+
+goroutine 23 [running]:
+testing.tRunner.func1.2({0xaf39a0, 0xd1a6f0})
+	/usr/local/go/src/testing/testing.go:1396 +0x24e
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1399 +0x39f
+panic({0xaf39a0, 0xd1a6f0})
+	/usr/local/go/src/runtime/panic.go:884 +0x212
+go.dedis.ch/dela/dkg/pedersen.TestResharingRecords(0xc0002ecd00?)
+	/home/mahsa/dela/dela/dkg/pedersen/resharing_records_test.go:67 +0x2398
+testing.tRunner(0xc0002ecd00, 0xc583a0)
+	/usr/local/go/src/testing/testing.go:1446 +0x10b
+created by testing.(*T).Run
+	/usr/local/go/src/testing/testing.go:1493 +0x35f
+exit status 2
+FAIL	go.dedis.ch/dela/dkg/pedersen	0.047s
+==============  starting the dkg ============== 
+n old =  8
+============== starting the resharing ==============
+==============  finishing the resharing ==============
+PASS
+ok  	go.dedis.ch/dela/dkg/pedersen	2.876s
+==============  starting the dkg ============== 
+n old =  16
+============== starting the resharing ==============
+==============  finishing the resharing ==============
+PASS
+ok  	go.dedis.ch/dela/dkg/pedersen	6.813s
+==============  starting the dkg ============== 
+n old =  32
+============== starting the resharing ==============
+==============  finishing the resharing ==============
+PASS
+ok  	go.dedis.ch/dela/dkg/pedersen	18.602s
+==============  starting the dkg ============== 
+n old =  64
+============== starting the resharing ==============
+==============  finishing the resharing ==============
+PASS
+ok  	go.dedis.ch/dela/dkg/pedersen	78.197s
+==============  starting the dkg ============== 
+n old =  128
+============== starting the resharing ==============
+==============  finishing the resharing ==============
+PASS
+ok  	go.dedis.ch/dela/dkg/pedersen	488.832s

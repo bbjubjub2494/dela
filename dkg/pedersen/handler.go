@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"runtime"
 	"strconv"
@@ -971,7 +972,9 @@ func (h *Handler) handleVerifiableDecrypt(out mino.Sender,
 		close(jobChan)
 	}()
 
-	n := workerNum
+	//n := workerNum
+	n := workerNumSlice[int64(math.Log2(float64(batchsize)))]
+
 	if batchsize < n {
 		n = batchsize
 	}

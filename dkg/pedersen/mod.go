@@ -2,7 +2,7 @@ package pedersen
 
 import (
 	"crypto/sha256"
-	"runtime"
+	"math"
 	"sync"
 	"time"
 
@@ -38,7 +38,8 @@ var (
 	// associated with the `dkg-resharing` protocol.
 	protocolNameResharing = "dkg-resharing"
 	// number of workers used to perform the encryption/decryption
-	workerNum = runtime.NumCPU()
+	//workerNum = runtime.NumCPU()
+	workerNumSlice = []int{1, 1, 2, 4, 8, 16, 32, 40, 100, 200, 400, 900}
 )
 
 const (
@@ -361,6 +362,7 @@ func (a *Actor) VerifiableDecrypt(ciphertexts []types.Ciphertext) ([][]byte, int
 	}
 
 	batchsize := len(ciphertexts)
+	workerNum := workerNumSlice[int64(math.Log2(float64(batchsize)))]
 
 	message := types.NewVerifiableDecryptRequest(ciphertexts)
 	start := time.Now()
