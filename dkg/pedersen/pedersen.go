@@ -8,7 +8,7 @@ import (
 
 	"go.dedis.ch/dela"
 
-	"go.dedis.ch/dela/crypto/ed25519"
+	bn256 "go.dedis.ch/dela/crypto/bls"
 	"go.dedis.ch/dela/dkg"
 
 	"go.dedis.ch/dela/crypto"
@@ -34,7 +34,7 @@ const failedStreamCreation = "failed to create stream: %v"
 const unexpectedStreamStop = "stream stopped unexpectedly: %v"
 
 // suite is the Kyber suite for Pedersen.
-var suite = suites.MustFind("Ed25519")
+var suite = suites.MustFind("bn256.G1")
 
 var (
 	// protocolNameSetup denotes the value of the protocol span tag associated
@@ -131,12 +131,12 @@ func (a *Actor) Setup(co crypto.CollectiveAuthority, threshold int) (kyber.Point
 		addrs = append(addrs, addrIter.GetNext())
 
 		pubkey := pubkeyIter.GetNext()
-		edKey, ok := pubkey.(ed25519.PublicKey)
+		bnKey, ok := pubkey.(bn256.PublicKey)
 		if !ok {
-			return nil, xerrors.Errorf("expected ed25519.PublicKey, got '%T'", pubkey)
+			return nil, xerrors.Errorf("expected bn256.PublicKey, got '%T'", pubkey)
 		}
 
-		pubkeys = append(pubkeys, edKey.GetPoint())
+		pubkeys = append(pubkeys, bnKey.GetPoint())
 	}
 
 	message := types.NewStart(threshold, addrs, pubkeys)
@@ -506,12 +506,12 @@ func (a *Actor) Reshare(co crypto.CollectiveAuthority, thresholdNew int) error {
 
 		pubkey := pubkeyIter.GetNext()
 
-		edKey, ok := pubkey.(ed25519.PublicKey)
+		bnKey, ok := pubkey.(bn256.PublicKey)
 		if !ok {
-			return xerrors.Errorf("expected ed25519.PublicKey, got '%T'", pubkey)
+			return xerrors.Errorf("expected bn256.PublicKey, got '%T'", pubkey)
 		}
 
-		pubkeysNew = append(pubkeysNew, edKey.GetPoint())
+		pubkeysNew = append(pubkeysNew, bnKey.GetPoint())
 	}
 
 	// Get the union of the new members and the old members

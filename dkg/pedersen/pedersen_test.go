@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/dela"
 	"go.dedis.ch/dela/crypto"
-	"go.dedis.ch/dela/crypto/ed25519"
+	bn256 "go.dedis.ch/dela/crypto/bls"
 	"go.dedis.ch/dela/dkg"
 	"go.dedis.ch/dela/dkg/pedersen/types"
 	"go.dedis.ch/dela/internal/testing/fake"
@@ -41,9 +41,9 @@ func TestPedersen_Setup(t *testing.T) {
 	actor.rpc = rpc
 
 	_, err = actor.Setup(fakeAuthority, 0)
-	require.EqualError(t, err, "expected ed25519.PublicKey, got 'fake.PublicKey'")
+	require.EqualError(t, err, "expected bn256.PublicKey, got 'fake.PublicKey'")
 
-	fakeAuthority = fake.NewAuthority(2, ed25519.NewSigner)
+	fakeAuthority = fake.NewAuthority(2, bn256.Generate)
 
 	_, err = actor.Setup(fakeAuthority, 1)
 	require.EqualError(t, err, fake.Err("failed to send start"))
@@ -286,7 +286,7 @@ func Test_Reshare_WrongPK(t *testing.T) {
 	co := fake.NewAuthority(1, fake.NewSigner)
 
 	err := a.Reshare(co, 0)
-	require.EqualError(t, err, "expected ed25519.PublicKey, got 'fake.PublicKey'")
+	require.EqualError(t, err, "expected bn256.PublicKey, got 'fake.PublicKey'")
 }
 
 func Test_Reshare_BadRPC(t *testing.T) {
@@ -361,7 +361,7 @@ func (ca CollectiveAuthority) GetPublicKey(addr mino.Address) (crypto.PublicKey,
 
 	for i, address := range ca.addrs {
 		if address.Equal(addr) {
-			return ed25519.NewPublicKeyFromPoint(ca.pubkeys[i]), i
+			return bn256.NewPublicKeyFromPoint(ca.pubkeys[i]), i
 		}
 	}
 	return nil, -1
@@ -397,5 +397,5 @@ type fakeSigner struct {
 
 // GetPublicKey implements crypto.Signer
 func (s fakeSigner) GetPublicKey() crypto.PublicKey {
-	return ed25519.NewPublicKeyFromPoint(s.pubkey)
+	return bn256.NewPublicKeyFromPoint(s.pubkey)
 }

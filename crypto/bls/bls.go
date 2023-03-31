@@ -129,6 +129,11 @@ func (pk PublicKey) MarshalText() ([]byte, error) {
 	return []byte(fmt.Sprintf("bls:%x", buffer)), nil
 }
 
+// GetPoint returns the kyber.point.
+func (pk PublicKey) GetPoint() kyber.Point {
+	return pk.point
+}
+
 // String implements fmt.String. It returns a string representation of the
 // point.
 func (pk PublicKey) String() string {
