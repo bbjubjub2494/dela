@@ -14,6 +14,7 @@ import (
 	"go.dedis.ch/dela/serde"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/share"
+	"go.dedis.ch/kyber/v3/sign/tbls"
 	pedersen "go.dedis.ch/kyber/v3/share/dkg/pedersen"
 	vss "go.dedis.ch/kyber/v3/share/vss/pedersen"
 	"golang.org/x/xerrors"
@@ -783,6 +784,29 @@ func (s *instance) handleDecrypt(out mino.Sender, msg types.DecryptRequest,
 
 	errs := out.Send(decryptReply, from)
 	err := <-errs
+	if err != nil {
+		return xerrors.Errorf("got an error while sending the decrypt reply: %v", err)
+	}
+
+	return nil
+}
+
+func (s *instance) handleSign(out mino.Sender, req types.SignRequest,
+	from mino.Address) error {
+
+	if !s.startRes.Done() {
+		return xerrors.Errorf("you must first initialize DKG. Did you call setup() first?")
+	}
+
+	sig, err := tbls.Sign(pairingSuite, s.privShare, req.GetMsg())
+	if err != nil {
+		return xerrors.Errorf("tbls.Sign: %v", err)
+	}
+
+	signReply := types.NewSignReply(sig)
+
+	errs := out.Send(signReply, from)
+	err = <-errs
 	if err != nil {
 		return xerrors.Errorf("got an error while sending the decrypt reply: %v", err)
 	}

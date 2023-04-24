@@ -1,10 +1,12 @@
 package types
 
 import (
+	"bytes"
 	"go.dedis.ch/dela/mino"
 	"go.dedis.ch/dela/serde"
 	"go.dedis.ch/dela/serde/registry"
 	"go.dedis.ch/kyber/v3"
+	"go.dedis.ch/kyber/v3/sign/tbls"
 	"golang.org/x/xerrors"
 )
 
@@ -401,6 +403,37 @@ func (s StartDone) Serialize(ctx serde.Context) ([]byte, error) {
 	return data, nil
 }
 
+// SignRequest is a message sent to request a threshold signature share.
+//
+// - implements serde.Message
+type SignRequest struct {
+	msg []byte
+}
+
+// NewSignRequest creates a new signature request.
+func NewSignRequest(msg []byte) SignRequest {
+	return SignRequest{
+		msg: bytes.Clone(msg),
+	}
+}
+
+// GetMsg returns the message being signed.
+func (req SignRequest) GetMsg() []byte {
+	return bytes.Clone(req.msg)
+}
+
+// Serialize implements serde.Message.
+func (req SignRequest) Serialize(ctx serde.Context) ([]byte, error) {
+	format := msgFormats.Get(ctx.GetFormat())
+
+	data, err := format.Encode(ctx, req)
+	if err != nil {
+		return nil, xerrors.Errorf("couldn't encode sign request: %v", err)
+	}
+
+	return data, nil
+}
+
 // DecryptRequest is a message sent to request a decryption.
 //
 // - implements serde.Message
@@ -466,6 +499,32 @@ func (req VerifiableDecryptRequest) Serialize(ctx serde.Context) ([]byte, error)
 	data, err := format.Encode(ctx, req)
 	if err != nil {
 		return nil, xerrors.Errorf("couldn't encode verifiable decrypt request: %v", err)
+	}
+
+	return data, nil
+}
+
+// SignReply is the response of a decryption request.
+//
+// - implements serde.Message
+type SignReply struct {
+	Share tbls.SigShare
+}
+
+// NewSignReply returns a new decryption reply.
+func NewSignReply(share tbls.SigShare) SignReply {
+	return SignReply{
+		Share: bytes.Clone(share),
+	}
+}
+
+// Serialize implements serde.Message.
+func (resp SignReply) Serialize(ctx serde.Context) ([]byte, error) {
+	format := msgFormats.Get(ctx.GetFormat())
+
+	data, err := format.Encode(ctx, resp)
+	if err != nil {
+		return nil, xerrors.Errorf("couldn't encode sign reply: %v", err)
 	}
 
 	return data, nil

@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"sync"
 	"time"
+	"fmt"
 
 	"go.dedis.ch/dela"
 
@@ -17,7 +18,9 @@ import (
 	"go.dedis.ch/dela/mino"
 	"go.dedis.ch/dela/serde"
 	"go.dedis.ch/kyber/v3"
+	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/share"
+	"go.dedis.ch/kyber/v3/sign/tbls"
 	"go.dedis.ch/kyber/v3/suites"
 	"go.dedis.ch/kyber/v3/util/random"
 	"golang.org/x/net/context"
@@ -35,6 +38,7 @@ const unexpectedStreamStop = "stream stopped unexpectedly: %v"
 
 // suite is the Kyber suite for Pedersen.
 var suite = suites.MustFind("bn256.G1")
+var pairingSuite = suite.(pairing.Suite)
 
 var (
 	// protocolNameSetup denotes the value of the protocol span tag associated
@@ -267,6 +271,72 @@ func (a *Actor) VerifiableEncrypt(message []byte, GBar kyber.Point) (ciphertext 
 	}
 
 	return ciphertext, remainder, nil
+}
+
+// Sign implements dkg.Actor. It gets the private shares of the nodes and
+// signs the message.
+func (a *Actor) Sign(msg []byte) ([]byte, error) {
+
+	if !a.startRes.Done() {
+		return nil, xerrors.Errorf(initDkgFirst)
+	}
+
+	players := mino.NewAddresses(a.startRes.getParticipants()...)
+
+	ctx, cancel := context.WithTimeout(context.Background(), decryptTimeout)
+	defer cancel()
+	ctx = context.WithValue(ctx, tracing.ProtocolKey, protocolNameDecrypt)
+
+	sender, receiver, err := a.rpc.Stream(ctx, players)
+	if err != nil {
+		return nil, xerrors.Errorf(failedStreamCreation, err)
+	}
+
+	players = mino.NewAddresses(a.startRes.getParticipants()...)
+	iterator := players.AddressIterator()
+
+	addrs := make([]mino.Address, 0, players.Len())
+	for iterator.HasNext() {
+		addrs = append(addrs, iterator.GetNext())
+	}
+
+	message := types.NewSignRequest(msg)
+
+	err = <-sender.Send(message, addrs...)
+	if err != nil {
+		return nil, xerrors.Errorf("failed to send decrypt request: %v", err)
+	}
+
+	sigShares := make([][]byte, len(addrs))
+	pubkey := share.NewPubPoly(suite, suite.Point().Base(), nil)
+
+	// TODO: set threshold
+	var t = len(addrs)
+
+	for i := 0; i < t; i++ {
+		src, message, err := receiver.Recv(ctx)
+		if err != nil {
+			return []byte{}, xerrors.Errorf(unexpectedStreamStop, err)
+		}
+
+		dela.Logger.Debug().Msgf("Received a decryption reply from %v", src)
+
+		fmt.Println(message)
+		signReply, ok := message.(types.SignReply)
+		if !ok {
+			return []byte{}, xerrors.Errorf("got unexpected reply, expected "+
+				"%T but got: %T", signReply, message)
+		}
+
+		sigShares[i] = signReply.Share
+	}
+
+	signature, err := tbls.Recover(suite.(pairing.Suite), pubkey, msg, sigShares, t, len(addrs))
+	if err != nil {
+		return []byte{}, xerrors.Errorf("failed to recover signature: %v", err)
+	}
+
+	return signature, nil
 }
 
 // Decrypt implements dkg.Actor. It gets the private shares of the nodes and

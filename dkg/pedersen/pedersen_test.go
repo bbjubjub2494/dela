@@ -15,6 +15,8 @@ import (
 	"go.dedis.ch/dela/mino/minogrpc"
 	"go.dedis.ch/dela/mino/router/tree"
 	"go.dedis.ch/kyber/v3"
+	"go.dedis.ch/kyber/v3/share"
+	"go.dedis.ch/kyber/v3/sign/tbls"
 )
 
 func TestPedersen_Listen(t *testing.T) {
@@ -128,6 +130,56 @@ func TestPedersen_Decrypt(t *testing.T) {
 	actor.rpc = rpc
 
 	_, err = actor.Decrypt(suite.Point(), suite.Point())
+	require.NoError(t, err)
+}
+
+func TestPedersen_Sign(t *testing.T) {
+	actor := Actor{
+		rpc: fake.NewBadRPC(),
+		startRes: &state{dkgState: certified,
+			participants: []mino.Address{fake.NewAddress(0)}, distrKey: suite.Point()},
+	}
+
+	_, err := actor.Decrypt(suite.Point(), suite.Point())
+	require.EqualError(t, err, fake.Err("failed to create stream"))
+
+	rpc := fake.NewStreamRPC(fake.NewBadReceiver(), fake.NewBadSender())
+	actor.rpc = rpc
+
+	_, err = actor.Decrypt(suite.Point(), suite.Point())
+	require.EqualError(t, err, fake.Err("failed to send decrypt request"))
+
+	recv := fake.NewReceiver(fake.NewRecvMsg(fake.NewAddress(0), nil))
+
+	rpc = fake.NewStreamRPC(recv, fake.Sender{})
+	actor.rpc = rpc
+
+	_, err = actor.Decrypt(suite.Point(), suite.Point())
+	require.EqualError(t, err, "got unexpected reply, expected types.DecryptReply but got: <nil>")
+
+	recv = fake.NewReceiver(
+		fake.NewRecvMsg(fake.NewAddress(0), types.DecryptReply{I: -1, V: suite.Point()}),
+	)
+
+	rpc = fake.NewStreamRPC(recv, fake.Sender{})
+	actor.rpc = rpc
+
+	_, err = actor.Decrypt(suite.Point(), suite.Point())
+	require.EqualError(t, err, "failed to recover commit: share: not enough "+
+		"good public shares to reconstruct secret commitment")
+
+		msg :=[]byte("merry christmas")
+	sig, err := tbls.Sign(pairingSuite, &share.PriShare{1, suite.Scalar()}, msg)
+	require.NoError(t, err)
+
+	recv = fake.NewReceiver(
+		fake.NewRecvMsg(fake.NewAddress(0), types.NewSignReply(sig)),
+	)
+
+	rpc = fake.NewStreamRPC(recv, fake.Sender{})
+	actor.rpc = rpc
+
+	_, err = actor.Sign(msg)
 	require.NoError(t, err)
 }
 

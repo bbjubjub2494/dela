@@ -24,6 +24,8 @@ type Actor interface {
 	// setup has not been done.
 	GetPublicKey() (kyber.Point, error)
 
+	Sign(msg []byte) ([]byte, error)
+
 	Encrypt(message []byte) (K, C kyber.Point, remainder []byte, err error)
 	Decrypt(K, C kyber.Point) ([]byte, error)
 
