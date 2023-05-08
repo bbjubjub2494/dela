@@ -87,52 +87,6 @@ func TestPedersen_GetPublicKey(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestPedersen_Decrypt(t *testing.T) {
-	actor := Actor{
-		rpc: fake.NewBadRPC(),
-		startRes: &state{dkgState: certified,
-			participants: []mino.Address{fake.NewAddress(0)}, distrKey: suite.Point()},
-	}
-
-	_, err := actor.Decrypt(suite.Point(), suite.Point())
-	require.EqualError(t, err, fake.Err("failed to create stream"))
-
-	rpc := fake.NewStreamRPC(fake.NewBadReceiver(), fake.NewBadSender())
-	actor.rpc = rpc
-
-	_, err = actor.Decrypt(suite.Point(), suite.Point())
-	require.EqualError(t, err, fake.Err("failed to send decrypt request"))
-
-	recv := fake.NewReceiver(fake.NewRecvMsg(fake.NewAddress(0), nil))
-
-	rpc = fake.NewStreamRPC(recv, fake.Sender{})
-	actor.rpc = rpc
-
-	_, err = actor.Decrypt(suite.Point(), suite.Point())
-	require.EqualError(t, err, "got unexpected reply, expected types.DecryptReply but got: <nil>")
-
-	recv = fake.NewReceiver(
-		fake.NewRecvMsg(fake.NewAddress(0), types.DecryptReply{I: -1, V: suite.Point()}),
-	)
-
-	rpc = fake.NewStreamRPC(recv, fake.Sender{})
-	actor.rpc = rpc
-
-	_, err = actor.Decrypt(suite.Point(), suite.Point())
-	require.EqualError(t, err, "failed to recover commit: share: not enough "+
-		"good public shares to reconstruct secret commitment")
-
-	recv = fake.NewReceiver(
-		fake.NewRecvMsg(fake.NewAddress(0), types.DecryptReply{I: 1, V: suite.Point()}),
-	)
-
-	rpc = fake.NewStreamRPC(recv, fake.Sender{})
-	actor.rpc = rpc
-
-	_, err = actor.Decrypt(suite.Point(), suite.Point())
-	require.NoError(t, err)
-}
-
 func TestPedersen_Sign(t *testing.T) {
 	actor := Actor{
 		rpc: fake.NewBadRPC(),
@@ -268,12 +222,8 @@ func TestPedersen_Scenario(t *testing.T) {
 
 	// every node should be able to encrypt/decrypt
 	for i := 0; i < n; i++ {
-		K, C, remainder, err := actors[i].Encrypt(message)
+		_, err := actors[i].Sign(message)
 		require.NoError(t, err)
-		require.Len(t, remainder, 0)
-		decrypted, err := actors[i].Decrypt(K, C)
-		require.NoError(t, err)
-		require.Equal(t, message, decrypted)
 	}
 }
 

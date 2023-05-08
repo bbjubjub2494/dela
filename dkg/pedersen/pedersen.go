@@ -37,7 +37,7 @@ const failedStreamCreation = "failed to create stream: %v"
 const unexpectedStreamStop = "stream stopped unexpectedly: %v"
 
 // suite is the Kyber suite for Pedersen.
-var suite = suites.MustFind("bn256.G1")
+var suite = suites.MustFind("bn256.G2")
 var pairingSuite = suite.(pairing.Suite)
 
 var (
@@ -73,8 +73,11 @@ type Pedersen struct {
 func NewPedersen(m mino.Mino) (*Pedersen, kyber.Point) {
 	factory := types.NewMessageFactory(m.GetAddressFactory())
 
-	privkey := suite.Scalar().Pick(suite.RandomStream())
-	pubkey := suite.Point().Mul(privkey, nil)
+	s := pairingSuite.G1()
+	privkey := s.Scalar().Pick(suite.RandomStream())
+	pubkey := s.Point().Mul(privkey, nil)
+
+	fmt.Println(pubkey)
 
 	return &Pedersen{
 		privKey: privkey,
