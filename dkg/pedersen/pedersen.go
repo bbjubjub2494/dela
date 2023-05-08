@@ -20,7 +20,6 @@ import (
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/share"
-	"go.dedis.ch/kyber/v3/sign/tbls"
 	"go.dedis.ch/kyber/v3/suites"
 	"go.dedis.ch/kyber/v3/util/random"
 	"golang.org/x/net/context"
@@ -334,7 +333,8 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 		sigShares[i] = signReply.Share
 	}
 
-	signature, err := tbls.Recover(suite.(pairing.Suite), pubkey, msg, sigShares, t, len(addrs))
+	fmt.Println(pairingSuite, pubkey, msg, sigShares, t, len(addrs))
+	signature, err := tblsRecover(pairingSuite, pubkey, msg, sigShares, t, len(addrs))
 	if err != nil {
 		return []byte{}, xerrors.Errorf("failed to recover signature: %v", err)
 	}
