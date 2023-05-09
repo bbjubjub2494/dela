@@ -178,6 +178,14 @@ func (s *instance) handleMessage(ctx context.Context, msg serde.Message, from mi
 
 		return s.handleVerifiableDecrypt(out, msg, from)
 
+	case types.SignRequest:
+		err := s.startRes.checkState(certified)
+		if err != nil {
+			return xerrors.Errorf(badState, err)
+		}
+
+		return s.handleSign(out, msg, from)
+
 	default:
 		return xerrors.Errorf("expected Start message, decrypt request or "+
 			"Deal as first message, got: %T", msg)

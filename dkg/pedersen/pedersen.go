@@ -73,11 +73,12 @@ type Pedersen struct {
 func NewPedersen(m mino.Mino) (*Pedersen, kyber.Point) {
 	factory := types.NewMessageFactory(m.GetAddressFactory())
 
-	s := pairingSuite.G1()
+	s := pairingSuite.G2()
 	privkey := s.Scalar().Pick(suite.RandomStream())
 	pubkey := s.Point().Mul(privkey, nil)
 
-	fmt.Println(pubkey)
+	fmt.Println(suite, suite.Point())
+	fmt.Println(pubkey.Equal(pubkey))
 
 	return &Pedersen{
 		privKey: privkey,

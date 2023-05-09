@@ -125,7 +125,7 @@ type msgFormat struct {
 
 func newMsgFormat() msgFormat {
 	return msgFormat{
-		suite: suites.MustFind("BN256.G1"),
+		suite: suites.MustFind("BN256.G2"),
 	}
 }
 
