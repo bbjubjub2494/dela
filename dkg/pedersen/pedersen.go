@@ -310,7 +310,7 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 	}
 
 	sigShares := make([][]byte, len(addrs))
-	pubkey := share.NewPubPoly(suite, suite.Point().Base(), nil)
+	pubkey := share.NewPubPoly(suite, suite.Point().Base(), a.startRes.Commits)
 
 	// TODO: set threshold
 	var t = len(addrs)
@@ -323,7 +323,6 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 
 		dela.Logger.Debug().Msgf("Received a decryption reply from %v", src)
 
-		fmt.Println(message)
 		signReply, ok := message.(types.SignReply)
 		if !ok {
 			return []byte{}, xerrors.Errorf("got unexpected reply, expected "+

@@ -89,6 +89,8 @@ type instance struct {
 	privShare *share.PriShare
 	privKey   kyber.Scalar
 
+	Commits []kyber.Point
+
 	startRes *state
 }
 
@@ -387,6 +389,7 @@ func (s *instance) finalize(ctx context.Context, from mino.Address, out mino.Sen
 
 	s.Lock()
 	s.privShare = distKey.PriShare()
+	s.Commits = distKey.Commits
 	s.Unlock()
 
 	done := types.NewStartDone(distKey.Public())

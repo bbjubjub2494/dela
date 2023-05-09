@@ -50,6 +50,7 @@ type state struct {
 	// participants is set once a sharing or resharing starts
 	participants []mino.Address
 	pubkeys      []kyber.Point
+	Commits      []kyber.Point
 	threshold    int
 	dkgState     dkgState
 }
@@ -76,8 +77,6 @@ func (s *state) switchState(new dkgState) error {
 			return xerrors.Errorf("resharing state must switch from initial or certified: %s", current)
 		}
 	}
-
-	s.dkgState = new
 
 	return nil
 }
