@@ -204,18 +204,10 @@ func (a *Actor) Encrypt(message []byte) (K, C kyber.Point, remainder []byte,
 		return nil, nil, nil, xerrors.Errorf(initDkgFirst)
 	}
 
-	// Embed the message (or as much of it as will fit) into a curve point.
-	M := suite.Point().Embed(message, random.New())
-	max := suite.Point().EmbedLen()
-	if max > len(message) {
-		max = len(message)
-	}
-	remainder = message[max:]
-	// ElGamal-encrypt the point to produce ciphertext (K,C).
-	k := suite.Scalar().Pick(random.New())             // ephemeral private key
-	K = suite.Point().Mul(k, nil)                      // ephemeral DH public key
-	S := suite.Point().Mul(k, a.startRes.getDistKey()) // ephemeral DH shared secret
-	C = S.Add(S, M)                                    // message blinded with secret
+	//DANGER: Dummy encryption
+	remainder = message
+	K = suite.Point()
+	C = suite.Point()
 
 	return K, C, remainder, nil
 }
@@ -398,19 +390,14 @@ func (a *Actor) Decrypt(K, C kyber.Point) ([]byte, error) {
 		}
 	}
 
-	res, err := share.RecoverCommit(suite, pubShares, len(addrs), len(addrs))
+	_, err = share.RecoverCommit(suite, pubShares, len(addrs), len(addrs))
 	if err != nil {
 		return []byte{}, xerrors.Errorf("failed to recover commit: %v", err)
 	}
 
-	decryptedMessage, err := res.Data()
-	if err != nil {
-		return []byte{}, xerrors.Errorf("failed to get embedded data: %v", err)
-	}
+	// No decrypted message because dummy encryption
 
-	dela.Logger.Info().Msgf("Decrypted message: %v", decryptedMessage)
-
-	return decryptedMessage, nil
+	return []byte{}, nil
 }
 
 // VerifiableDecrypt implements dkg.Actor. It does as Decrypt() but in addition

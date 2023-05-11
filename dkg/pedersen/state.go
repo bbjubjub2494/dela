@@ -78,6 +78,8 @@ func (s *state) switchState(new dkgState) error {
 		}
 	}
 
+	s.dkgState = new
+
 	return nil
 }
 

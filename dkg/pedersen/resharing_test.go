@@ -81,7 +81,7 @@ func TestResharing_minoch(t *testing.T) {
 	message := []byte(testMessage)
 	K, C, remainder, err := actorsOld[0].Encrypt(message)
 	require.NoError(t, err, "encrypting the message was not successful")
-	require.Len(t, remainder, 0)
+	require.Len(t, remainder, len(message))
 
 	// Setting up the second dkg nCommon is the number of nodes that are common
 	// between the new and the old committee.

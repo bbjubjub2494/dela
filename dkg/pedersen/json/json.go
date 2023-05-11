@@ -71,6 +71,10 @@ type DecryptRequest struct {
 	C []byte
 }
 
+type SignRequest struct {
+	msg []byte
+}
+
 type Ciphertext struct {
 	K    PublicKey // r
 	C    PublicKey // C
@@ -87,6 +91,10 @@ type VerifiableDecryptRequest struct {
 type DecryptReply struct {
 	V []byte
 	I int64
+}
+
+type SignReply struct {
+	Share []byte
 }
 
 type ShareAndProof struct {
@@ -112,6 +120,8 @@ type Message struct {
 	StartDone                *StartDone                `json:",omitempty"`
 	DecryptRequest           *DecryptRequest           `json:",omitempty"`
 	DecryptReply             *DecryptReply             `json:",omitempty"`
+	SignRequest           *SignRequest           `json:",omitempty"`
+	SignReply             *SignReply             `json:",omitempty"`
 	VerifiableDecryptReply   *VerifiableDecryptReply   `json:",omitempty"`
 	VerifiableDecryptRequest *VerifiableDecryptRequest `json:",omitempty"`
 }
@@ -171,10 +181,14 @@ func (f msgFormat) Encode(ctx serde.Context, msg serde.Message) ([]byte, error) 
 		m, err = encodeStartDone(in)
 	case types.DecryptRequest:
 		m, err = encodeDecryptRequest(in)
+	case types.SignRequest:
+		m, err = encodeSignRequest(in)
 	case types.VerifiableDecryptRequest:
 		m, err = encodeVerifiableDecryptRequest(in)
 	case types.DecryptReply:
 		m, err = encodeDecryptReply(in)
+	case types.SignReply:
+		m, err = encodeSignReply(in)
 	case types.VerifiableDecryptReply:
 		m, err = encodeVerifiableDecryptReply(in)
 	default:
@@ -538,6 +552,20 @@ func (f msgFormat) decodeDecryptRequest(ctx serde.Context, msg *DecryptRequest) 
 	return req, nil
 }
 
+func encodeSignRequest(msg types.SignRequest) (Message, error) {
+	req := SignRequest{
+		msg: msg.GetMsg(),
+	}
+
+	return Message{SignRequest: &req}, nil
+}
+
+func (f msgFormat) decodeSignRequest(ctx serde.Context, msg *SignRequest) (serde.Message, error) {
+	req := types.NewSignRequest(msg.msg)
+
+	return req, nil
+}
+
 func encodeVerifiableDecryptRequest(msg types.VerifiableDecryptRequest) (Message, error) {
 	ciphertexts := msg.GetCiphertexts()
 	var encodedCiphertexts []Ciphertext
@@ -647,6 +675,18 @@ func (f msgFormat) decodeVerifiableDecryptRequest(ctx serde.Context,
 	}
 
 	resp := types.NewVerifiableDecryptRequest(decodedCiphertexts)
+
+	return resp, nil
+}
+
+func encodeSignReply(msg types.SignReply) (Message, error) {
+	resp := SignReply{ []byte(msg.Share) }
+
+	return Message{SignReply: &resp}, nil
+}
+
+func (f msgFormat) decodeSignReply(ctx serde.Context, msg *SignReply) (serde.Message, error) {
+	resp := types.NewSignReply(msg.Share)
 
 	return resp, nil
 }
