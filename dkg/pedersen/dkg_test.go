@@ -15,7 +15,6 @@ import (
 	"go.dedis.ch/dela/mino"
 	"go.dedis.ch/dela/serde"
 	"go.dedis.ch/kyber/v3"
-	"go.dedis.ch/kyber/v3/share"
 	pedersen "go.dedis.ch/kyber/v3/share/dkg/pedersen"
 	vss "go.dedis.ch/kyber/v3/share/vss/pedersen"
 )
@@ -907,29 +906,6 @@ func TestDKGInstance_sendDealsResharing_ctxFail(t *testing.T) {
 
 	err := s.sendDealsResharing(ctx, blockingSender{}, make([]mino.Address, 1), nil)
 	require.EqualError(t, err, "context done: context canceled")
-}
-
-func TestDKGInstance_handleDecrypt_notStarted(t *testing.T) {
-	s := instance{
-		startRes: &state{},
-	}
-
-	err := s.handleDecrypt(nil, types.DecryptRequest{}, nil)
-	require.EqualError(t, err, "you must first initialize DKG. Did you call setup() first?")
-}
-
-func TestDKGInstance_handleDecrypt_sendFail(t *testing.T) {
-	s := instance{
-		startRes: &state{
-			dkgState: certified,
-		},
-		privShare: &share.PriShare{V: suite.Scalar()},
-	}
-
-	req := types.DecryptRequest{K: suite.Point(), C: suite.Point()}
-
-	err := s.handleDecrypt(fake.NewBadSender(), req, nil)
-	require.EqualError(t, err, fake.Err("got an error while sending the decrypt reply"))
 }
 
 func TestDKGInstance_handleDeal_responseFail(t *testing.T) {

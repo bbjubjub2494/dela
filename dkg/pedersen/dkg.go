@@ -162,22 +162,6 @@ func (s *instance) handleMessage(ctx context.Context, msg serde.Message, from mi
 
 		s.responses.Send(msg)
 
-	case types.DecryptRequest:
-		err := s.startRes.checkState(certified)
-		if err != nil {
-			return xerrors.Errorf(badState, err)
-		}
-
-		return s.handleDecrypt(out, msg, from)
-
-	case types.VerifiableDecryptRequest:
-		err := s.startRes.checkState(certified)
-		if err != nil {
-			return xerrors.Errorf(badState, err)
-		}
-
-		return s.handleVerifiableDecrypt(out, msg, from)
-
 	case types.SignRequest:
 		err := s.startRes.checkState(certified)
 		if err != nil {
@@ -781,27 +765,6 @@ func (s *instance) receiveDealsResharing(ctx context.Context, nt nodeType,
 	return nil
 }
 
-func (s *instance) handleDecrypt(out mino.Sender, msg types.DecryptRequest,
-	from mino.Address) error {
-
-	if !s.startRes.Done() {
-		return xerrors.Errorf("you must first initialize DKG. Did you call setup() first?")
-	}
-
-	S := suite.Point().Mul(s.privShare.V, msg.K)
-
-	partial := suite.Point().Sub(msg.C, S)
-	decryptReply := types.NewDecryptReply(int64(s.privShare.I), partial)
-
-	errs := out.Send(decryptReply, from)
-	err := <-errs
-	if err != nil {
-		return xerrors.Errorf("got an error while sending the decrypt reply: %v", err)
-	}
-
-	return nil
-}
-
 func (s *instance) handleSign(out mino.Sender, req types.SignRequest,
 	from mino.Address) error {
 
@@ -820,72 +783,6 @@ func (s *instance) handleSign(out mino.Sender, req types.SignRequest,
 	err = <-errs
 	if err != nil {
 		return xerrors.Errorf("got an error while sending the decrypt reply: %v", err)
-	}
-
-	return nil
-}
-
-func (s *instance) handleVerifiableDecrypt(out mino.Sender,
-	msg types.VerifiableDecryptRequest, from mino.Address) error {
-
-	type job struct {
-		index int // index where to put the response
-		ct    types.Ciphertext
-	}
-
-	ciphertexts := msg.GetCiphertexts()
-	batchsize := len(ciphertexts)
-
-	wgBatchReply := sync.WaitGroup{}
-
-	shareAndProofs := make([]types.ShareAndProof, batchsize)
-	jobChan := make(chan job)
-
-	// Fill the chan with jobs
-	go func() {
-		for i, ct := range ciphertexts {
-			jobChan <- job{
-				index: i,
-				ct:    ct,
-			}
-
-		}
-		close(jobChan)
-	}()
-
-	n := workerNum
-	if batchsize < n {
-		n = batchsize
-	}
-
-	// Spins up workers to process jobs from the chan
-	for i := 0; i < n; i++ {
-		wgBatchReply.Add(1)
-		go func() {
-			defer wgBatchReply.Done()
-
-			for j := range jobChan {
-				sp, err := verifiableDecryption(j.ct, s.privShare.V, s.privShare.I)
-				if err != nil {
-					s.log.Err(err).Msg("verifiable decryption failed")
-				}
-
-				shareAndProofs[j.index] = *sp
-			}
-
-		}()
-	}
-
-	wgBatchReply.Wait()
-
-	s.log.Info().Msg("sending back verifiable decrypt reply")
-
-	verifiableDecryptReply := types.NewVerifiableDecryptReply(shareAndProofs)
-
-	errs := out.Send(verifiableDecryptReply, from)
-	err := <-errs
-	if err != nil {
-		return xerrors.Errorf("failed to send verifiable decrypt: %v", err)
 	}
 
 	return nil

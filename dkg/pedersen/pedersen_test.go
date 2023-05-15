@@ -180,7 +180,7 @@ func TestPedersen_Scenario(t *testing.T) {
 		actors[i] = actor
 	}
 
-	// trying to call a decrypt/encrypt before a setup
+	// trying to call sign before a setup
 	_, err := actors[0].Sign(message)
 	require.EqualError(t, err, "you must first initialize DKG. Did you call setup() first?")
 
@@ -197,49 +197,6 @@ func TestPedersen_Scenario(t *testing.T) {
 	}
 }
 
-func Test_Worker_BadProof(t *testing.T) {
-	ct := types.Ciphertext{
-		K:    suite.Point(),
-		C:    suite.Point(),
-		UBar: suite.Point(),
-		E:    suite.Scalar(),
-		F:    suite.Scalar(),
-		GBar: suite.Point(),
-	}
-
-	sap := types.ShareAndProof{
-		V:  suite.Point(),
-		I:  0,
-		Ui: suite.Point(),
-		Ei: suite.Scalar(),
-		Fi: suite.Scalar(),
-		Hi: suite.Point(),
-	}
-
-	w := worker{
-		numParticipants:  0,
-		decryptedMessage: [][]byte{},
-		ciphertexts: []types.Ciphertext{
-			ct,
-		},
-		responses: []types.VerifiableDecryptReply{types.NewVerifiableDecryptReply([]types.ShareAndProof{sap})},
-	}
-
-	err := w.work(0)
-	require.Regexp(t, "^failed to check the decryption proof: hash is not valid", err.Error())
-}
-
-func Test_Worker_BadRecover(t *testing.T) {
-	w := worker{
-		numParticipants:  2,
-		decryptedMessage: [][]byte{},
-		ciphertexts:      []types.Ciphertext{},
-		responses:        []types.VerifiableDecryptReply{},
-	}
-
-	err := w.work(0)
-	require.Regexp(t, "^failed to recover the commit:", err.Error())
-}
 
 func Test_Reshare_NotDone(t *testing.T) {
 	a := Actor{

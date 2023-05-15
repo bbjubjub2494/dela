@@ -2,7 +2,6 @@ package pedersen
 
 import (
 	"runtime"
-	"sync"
 	"time"
 	"fmt"
 
@@ -229,6 +228,8 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 
 	sigShares := make([][]byte, len(addrs))
 	pubkey := share.NewPubPoly(suite, suite.Point().Base(), a.startRes.Commits)
+	fmt.Println(suite, suite.Point().Base(), a.startRes.Commits)
+	fmt.Println(pubkey)
 
 	// TODO: set threshold
 	var t = len(addrs)
@@ -250,226 +251,14 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 		sigShares[i] = signReply.Share
 	}
 
+	fmt.Println(sigShares)
+
 	signature, err := tbls.Recover(suite.(pairing.Suite), pubkey, msg, sigShares, t, len(addrs))
 	if err != nil {
 		return []byte{}, xerrors.Errorf("failed to recover signature: %v", err)
 	}
 
 	return signature, nil
-}
-
-// Decrypt implements dkg.Actor. It gets the private shares of the nodes and
-// decrypt the  message.
-func (a *Actor) Decrypt(K, C kyber.Point) ([]byte, error) {
-
-	if !a.startRes.Done() {
-		return nil, xerrors.Errorf(initDkgFirst)
-	}
-
-	players := mino.NewAddresses(a.startRes.getParticipants()...)
-
-	ctx, cancel := context.WithTimeout(context.Background(), decryptTimeout)
-	defer cancel()
-	ctx = context.WithValue(ctx, tracing.ProtocolKey, protocolNameDecrypt)
-
-	sender, receiver, err := a.rpc.Stream(ctx, players)
-	if err != nil {
-		return nil, xerrors.Errorf(failedStreamCreation, err)
-	}
-
-	players = mino.NewAddresses(a.startRes.getParticipants()...)
-	iterator := players.AddressIterator()
-
-	addrs := make([]mino.Address, 0, players.Len())
-	for iterator.HasNext() {
-		addrs = append(addrs, iterator.GetNext())
-	}
-
-	message := types.NewDecryptRequest(K, C)
-
-	err = <-sender.Send(message, addrs...)
-	if err != nil {
-		return nil, xerrors.Errorf("failed to send decrypt request: %v", err)
-	}
-
-	pubShares := make([]*share.PubShare, len(addrs))
-
-	for i := 0; i < len(addrs); i++ {
-		src, message, err := receiver.Recv(ctx)
-		if err != nil {
-			return []byte{}, xerrors.Errorf(unexpectedStreamStop, err)
-		}
-
-		dela.Logger.Debug().Msgf("Received a decryption reply from %v", src)
-
-		decryptReply, ok := message.(types.DecryptReply)
-		if !ok {
-			return []byte{}, xerrors.Errorf("got unexpected reply, expected "+
-				"%T but got: %T", decryptReply, message)
-		}
-
-		pubShares[i] = &share.PubShare{
-			I: int(decryptReply.I),
-			V: decryptReply.V,
-		}
-	}
-
-	_, err = share.RecoverCommit(suite, pubShares, len(addrs), len(addrs))
-	if err != nil {
-		return []byte{}, xerrors.Errorf("failed to recover commit: %v", err)
-	}
-
-	// No decrypted message because dummy encryption
-
-	return []byte{}, nil
-}
-
-// VerifiableDecrypt implements dkg.Actor. It does as Decrypt() but in addition
-// it checks whether the decryption proofs are valid.
-//
-// See https://arxiv.org/pdf/2205.08529.pdf / section 5.4 Protocol / step 3
-func (a *Actor) VerifiableDecrypt(ciphertexts []types.Ciphertext) ([][]byte, error) {
-
-	if !a.startRes.Done() {
-		return nil, xerrors.Errorf(initDkgFirst)
-	}
-
-	players := mino.NewAddresses(a.startRes.getParticipants()...)
-
-	ctx, cancel := context.WithTimeout(context.Background(), decryptTimeout)
-	defer cancel()
-	ctx = context.WithValue(ctx, tracing.ProtocolKey, protocolNameDecrypt)
-
-	sender, receiver, err := a.rpc.Stream(ctx, players)
-	if err != nil {
-		return nil, xerrors.Errorf(failedStreamCreation, err)
-	}
-
-	players = mino.NewAddresses(a.startRes.getParticipants()...)
-	iterator := players.AddressIterator()
-
-	addrs := make([]mino.Address, 0, players.Len())
-	for iterator.HasNext() {
-		addrs = append(addrs, iterator.GetNext())
-	}
-
-	batchsize := len(ciphertexts)
-
-	message := types.NewVerifiableDecryptRequest(ciphertexts)
-	// sending the decrypt request to the nodes
-	err = <-sender.Send(message, addrs...)
-	if err != nil {
-		return nil, xerrors.Errorf("failed to send verifiable decrypt request: %v", err)
-	}
-
-	responses := make([]types.VerifiableDecryptReply, len(addrs))
-
-	// receive decrypt reply from the nodes
-	for i := range addrs {
-		from, message, err := receiver.Recv(ctx)
-		if err != nil {
-			return nil, xerrors.Errorf(unexpectedStreamStop, err)
-		}
-
-		dela.Logger.Debug().Msgf("received share from %v\n", from)
-
-		shareAndProof, ok := message.(types.VerifiableDecryptReply)
-		if !ok {
-			return nil, xerrors.Errorf("got unexpected reply, expected "+
-				"%T but got: %T", shareAndProof, message)
-		}
-
-		responses[i] = shareAndProof
-	}
-
-	// the final decrypted message
-	decryptedMessage := make([][]byte, batchsize)
-
-	var wgBatchReply sync.WaitGroup
-	jobChan := make(chan int)
-
-	go func() {
-		for i := 0; i < batchsize; i++ {
-			jobChan <- i
-		}
-
-		close(jobChan)
-	}()
-
-	if batchsize < workerNum {
-		workerNum = batchsize
-	}
-
-	worker := newWorker(len(addrs), decryptedMessage, responses, ciphertexts)
-
-	for i := 0; i < workerNum; i++ {
-		wgBatchReply.Add(1)
-
-		go func() {
-			defer wgBatchReply.Done()
-			for j := range jobChan {
-				err := worker.work(j)
-				if err != nil {
-					dela.Logger.Err(err).Msgf("error in a worker")
-				}
-			}
-		}()
-	}
-
-	wgBatchReply.Wait()
-
-	return decryptedMessage, nil
-}
-
-func newWorker(numParticipants int, decryptedMessage [][]byte,
-	responses []types.VerifiableDecryptReply, ciphertexts []types.Ciphertext) worker {
-
-	return worker{
-		numParticipants:  numParticipants,
-		decryptedMessage: decryptedMessage,
-		responses:        responses,
-		ciphertexts:      ciphertexts,
-	}
-}
-
-// worker contains the data needed by a worker to perform the verifiable
-// decryption job. All its fields must be read-only, except the
-// decryptedMessage, which can be written at a provided jobIndex.
-type worker struct {
-	numParticipants  int
-	decryptedMessage [][]byte
-	ciphertexts      []types.Ciphertext
-	responses        []types.VerifiableDecryptReply
-}
-
-func (w worker) work(jobIndex int) error {
-	pubShares := make([]*share.PubShare, w.numParticipants)
-
-	for k, response := range w.responses {
-		resp := response.GetShareAndProof()[jobIndex]
-
-		err := checkDecryptionProof(resp, w.ciphertexts[jobIndex].K)
-		if err != nil {
-			return xerrors.Errorf("failed to check the decryption proof: %v", err)
-		}
-
-		pubShares[k] = &share.PubShare{
-			I: int(resp.I),
-			V: resp.V,
-		}
-	}
-
-	res, err := share.RecoverCommit(suite, pubShares, w.numParticipants, w.numParticipants)
-	if err != nil {
-		return xerrors.Errorf("failed to recover the commit: %v", err)
-	}
-
-	w.decryptedMessage[jobIndex], err = res.Data()
-	if err != nil {
-		return xerrors.Errorf("failed to get embedded data : %v", err)
-	}
-
-	return nil
 }
 
 // Reshare implements dkg.Actor. It recreates the DKG with an updated list of
