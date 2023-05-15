@@ -1,7 +1,6 @@
 package pedersen
 
 import (
-	"crypto/sha256"
 	"runtime"
 	"sync"
 	"time"
@@ -22,7 +21,6 @@ import (
 	"go.dedis.ch/kyber/v3/share"
 	"go.dedis.ch/kyber/v3/sign/tbls"
 	"go.dedis.ch/kyber/v3/suites"
-	"go.dedis.ch/kyber/v3/util/random"
 	"golang.org/x/net/context"
 	"golang.org/x/xerrors"
 )
@@ -193,80 +191,6 @@ func (a *Actor) GetPublicKey() (kyber.Point, error) {
 	}
 
 	return a.startRes.getDistKey(), nil
-}
-
-// Encrypt implements dkg.Actor. It uses the DKG public key to encrypt a
-// message.
-func (a *Actor) Encrypt(message []byte) (K, C kyber.Point, remainder []byte,
-	err error) {
-
-	if !a.startRes.Done() {
-		return nil, nil, nil, xerrors.Errorf(initDkgFirst)
-	}
-
-	//DANGER: Dummy encryption
-	remainder = message
-	K = suite.Point()
-	C = suite.Point()
-
-	return K, C, remainder, nil
-}
-
-// VerifiableEncrypt implements dkg.Actor. It uses the DKG public key to encrypt
-// a message and provide a zero knowledge proof that the encryption is done by
-// this person.
-//
-// See https://arxiv.org/pdf/2205.08529.pdf / section 5.4 Protocol / step 1
-func (a *Actor) VerifiableEncrypt(message []byte, GBar kyber.Point) (ciphertext types.Ciphertext,
-	remainder []byte, err error) {
-
-	if !a.startRes.Done() {
-		return types.Ciphertext{}, nil, xerrors.Errorf("you must first initialize " +
-			"DKG. Did you call setup() first?")
-	}
-
-	// Embed the message (or as much of it as will fit) into a curve point.
-	M := suite.Point().Embed(message, random.New())
-
-	max := suite.Point().EmbedLen()
-	if max > len(message) {
-		max = len(message)
-	}
-
-	remainder = message[max:]
-
-	// ElGamal-encrypt the point to produce ciphertext (K,C).
-	k := suite.Scalar().Pick(random.New())             // ephemeral private key
-	K := suite.Point().Mul(k, nil)                     // ephemeral DH public key
-	S := suite.Point().Mul(k, a.startRes.getDistKey()) // ephemeral DH shared secret
-	C := S.Add(S, M)                                   // message blinded with secret
-
-	// producing the zero knowledge proof
-	UBar := suite.Point().Mul(k, GBar)
-	s := suite.Scalar().Pick(random.New())
-	W := suite.Point().Mul(s, nil)
-	WBar := suite.Point().Mul(s, GBar)
-
-	hash := sha256.New()
-	C.MarshalTo(hash)
-	K.MarshalTo(hash)
-	UBar.MarshalTo(hash)
-	W.MarshalTo(hash)
-	WBar.MarshalTo(hash)
-
-	E := suite.Scalar().SetBytes(hash.Sum(nil))
-	F := suite.Scalar().Add(s, suite.Scalar().Mul(E, k))
-
-	ciphertext = types.Ciphertext{
-		K:    K,
-		C:    C,
-		UBar: UBar,
-		E:    E,
-		F:    F,
-		GBar: GBar,
-	}
-
-	return ciphertext, remainder, nil
 }
 
 // Sign implements dkg.Actor. It gets the private shares of the nodes and

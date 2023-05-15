@@ -122,19 +122,6 @@ func TestPedersen_Sign(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func Test_Decrypt_StreamStop(t *testing.T) {
-	a := Actor{
-		rpc: fake.NewStreamRPC(fake.NewBadReceiver(), fake.Sender{}),
-		startRes: &state{
-			dkgState:     certified,
-			participants: []mino.Address{fake.NewAddress(0)},
-		},
-	}
-
-	_, err := a.Decrypt(nil, nil)
-	require.EqualError(t, err, fake.Err("stream stopped unexpectedly"))
-}
-
 func TestPedersen_Scenario(t *testing.T) {
 	// Use with MINO_TRAFFIC=log
 	// traffic.LogItems = false
@@ -195,8 +182,6 @@ func TestPedersen_Scenario(t *testing.T) {
 
 	// trying to call a decrypt/encrypt before a setup
 	_, err := actors[0].Sign(message)
-	require.EqualError(t, err, "you must first initialize DKG. Did you call setup() first?")
-	_, err = actors[0].Decrypt(nil, nil)
 	require.EqualError(t, err, "you must first initialize DKG. Did you call setup() first?")
 
 	_, err = actors[0].Setup(fakeAuthority, n)

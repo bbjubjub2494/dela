@@ -72,7 +72,7 @@ type DecryptRequest struct {
 }
 
 type SignRequest struct {
-	msg []byte
+	Msg []byte
 }
 
 type Ciphertext struct {
@@ -259,11 +259,17 @@ func (f msgFormat) Decode(ctx serde.Context, data []byte) (serde.Message, error)
 	case m.DecryptRequest != nil:
 		return f.decodeDecryptRequest(ctx, m.DecryptRequest)
 
+	case m.SignRequest != nil:
+		return f.decodeSignRequest(ctx, m.SignRequest)
+
 	case m.VerifiableDecryptRequest != nil:
 		return f.decodeVerifiableDecryptRequest(ctx, m.VerifiableDecryptRequest)
 
 	case m.DecryptReply != nil:
 		return f.decodeDecryptReply(ctx, m.DecryptReply)
+
+	case m.SignReply != nil:
+		return f.decodeSignReply(ctx, m.SignReply)
 
 	case m.VerifiableDecryptReply != nil:
 		return f.decodeVerifiableDecryptReply(ctx, m.VerifiableDecryptReply)
@@ -554,14 +560,15 @@ func (f msgFormat) decodeDecryptRequest(ctx serde.Context, msg *DecryptRequest) 
 
 func encodeSignRequest(msg types.SignRequest) (Message, error) {
 	req := SignRequest{
-		msg: msg.GetMsg(),
+		Msg: msg.GetMsg(),
 	}
+
 
 	return Message{SignRequest: &req}, nil
 }
 
 func (f msgFormat) decodeSignRequest(ctx serde.Context, msg *SignRequest) (serde.Message, error) {
-	req := types.NewSignRequest(msg.msg)
+	req := types.NewSignRequest(msg.Msg)
 
 	return req, nil
 }
