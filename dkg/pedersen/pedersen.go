@@ -232,7 +232,8 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 	fmt.Println(pubkey)
 
 	// TODO: set threshold
-	var t = len(addrs)
+	var n = len(addrs)
+	var t = n
 
 	for i := 0; i < t; i++ {
 		src, message, err := receiver.Recv(ctx)
@@ -253,7 +254,7 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 
 	fmt.Println(sigShares)
 
-	signature, err := tbls.Recover(suite.(pairing.Suite), pubkey, msg, sigShares, t, len(addrs))
+	signature, err := tbls.Recover(suite.(pairing.Suite), pubkey, msg, sigShares, t, n)
 	if err != nil {
 		return []byte{}, xerrors.Errorf("failed to recover signature: %v", err)
 	}

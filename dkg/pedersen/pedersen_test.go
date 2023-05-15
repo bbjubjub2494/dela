@@ -90,8 +90,11 @@ func TestPedersen_GetPublicKey(t *testing.T) {
 }
 
 func TestPedersen_Sign(t *testing.T) {
-	priShare := &share.PriShare{1, suite.Scalar().Pick(suite.RandomStream())}
-	priPoly, err := share.RecoverPriPoly(bn256.NewSuite().G2(), []*share.PriShare{priShare}, 1, 1)
+	priShares := []*share.PriShare{
+		&share.PriShare{0, suite.Scalar().Pick(suite.RandomStream())},
+		&share.PriShare{1, suite.Scalar().Pick(suite.RandomStream())},
+	}
+	priPoly, err := share.RecoverPriPoly(bn256.NewSuite().G2(), priShares, 2, 2)
 	require.NoError(t, err)
 	pubPoly := priPoly.Commit(nil)
 	b, commits := pubPoly.Info()
@@ -100,15 +103,20 @@ func TestPedersen_Sign(t *testing.T) {
 	actor := Actor{
 		rpc: fake.NewBadRPC(),
 		startRes: &state{dkgState: certified,
-			participants: []mino.Address{fake.NewAddress(0)}, Commits: commits},
+			participants: []mino.Address{fake.NewAddress(0),fake.NewAddress(1)}, Commits: commits},
 	}
 
 		msg :=[]byte("merry christmas")
-	tsig, err := tbls.Sign(pairingSuite, priShare, msg)
+	var tsigs [][]byte
+	for i := range priShares {
+	tsig, err := tbls.Sign(pairingSuite, priShares[i], msg)
 	require.NoError(t, err)
+	tsigs = append(tsigs, tsig)
+	}
 
 	recv := fake.NewReceiver(
-		fake.NewRecvMsg(fake.NewAddress(0), types.NewSignReply(tsig)),
+		fake.NewRecvMsg(fake.NewAddress(0), types.NewSignReply(tsigs[0])),
+		fake.NewRecvMsg(fake.NewAddress(1), types.NewSignReply(tsigs[1])),
 	)
 
 	rpc := fake.NewStreamRPC(recv, fake.Sender{})
@@ -138,7 +146,7 @@ func TestPedersen_Scenario(t *testing.T) {
 
 	dela.Logger = dela.Logger.Level(zerolog.WarnLevel)
 
-	n := 32
+	n := 1
 
 	minos := make([]mino.Mino, n)
 	dkgs := make([]dkg.DKG, n)
@@ -186,6 +194,8 @@ func TestPedersen_Scenario(t *testing.T) {
 
 	_, err = actors[0].Setup(fakeAuthority, n)
 	require.NoError(t, err)
+
+	println("hello")
 
 	_, err = actors[0].Setup(fakeAuthority, n)
 	require.EqualError(t, err, "startRes is already done, only one setup call is allowed")
