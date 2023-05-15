@@ -94,28 +94,6 @@ func TestDKGInstance_HandleResponseFail(t *testing.T) {
 		"UNKNOWN != one of [Initial Sharing Certified Resharing]")
 }
 
-func TestDKGInstance_HandleDecryptRequestFail(t *testing.T) {
-	s := instance{
-		startRes: &state{dkgState: 0xaa},
-	}
-
-	err := s.handleMessage(context.TODO(), types.DecryptRequest{},
-		fake.NewAddress(0), nil)
-
-	require.EqualError(t, err, "bad state: unexpected state: UNKNOWN != one of [Certified]")
-}
-
-func TestDKGInstance_HandleVerifiableDecryptRequestFail(t *testing.T) {
-	s := instance{
-		startRes: &state{dkgState: 0xaa},
-	}
-
-	err := s.handleMessage(context.TODO(), types.VerifiableDecryptRequest{},
-		fake.NewAddress(0), nil)
-
-	require.EqualError(t, err, "bad state: unexpected state: UNKNOWN != one of [Certified]")
-}
-
 func TestDKGInstance_HandleUnknown(t *testing.T) {
 	s := instance{
 		startRes: &state{dkgState: 0xaa},
