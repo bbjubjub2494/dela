@@ -45,7 +45,7 @@ func TestPedersen_Setup(t *testing.T) {
 	actor.rpc = rpc
 
 	_, err = actor.Setup(fakeAuthority, 0)
-	require.EqualError(t, err, "expected bn256.PublicKey, got 'fake.PublicKey'")
+	require.EqualError(t, err, "expected bls.PublicKey, got 'fake.PublicKey'")
 
 	fakeAuthority = fake.NewAuthority(2, bls.Generate)
 
@@ -215,7 +215,7 @@ func Test_Reshare_WrongPK(t *testing.T) {
 	co := fake.NewAuthority(1, fake.NewSigner)
 
 	err := a.Reshare(co, 0)
-	require.EqualError(t, err, "expected bn256.PublicKey, got 'fake.PublicKey'")
+	require.EqualError(t, err, "expected bls.PublicKey, got 'fake.PublicKey'")
 }
 
 func Test_Reshare_BadRPC(t *testing.T) {

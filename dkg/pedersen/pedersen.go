@@ -7,7 +7,7 @@ import (
 
 	"go.dedis.ch/dela"
 
-	bn256 "go.dedis.ch/dela/crypto/bls"
+	"go.dedis.ch/dela/crypto/bls"
 	"go.dedis.ch/dela/dkg"
 
 	"go.dedis.ch/dela/crypto"
@@ -136,9 +136,9 @@ func (a *Actor) Setup(co crypto.CollectiveAuthority, threshold int) (kyber.Point
 		addrs = append(addrs, addrIter.GetNext())
 
 		pubkey := pubkeyIter.GetNext()
-		bnKey, ok := pubkey.(bn256.PublicKey)
+		bnKey, ok := pubkey.(bls.PublicKey)
 		if !ok {
-			return nil, xerrors.Errorf("expected bn256.PublicKey, got '%T'", pubkey)
+			return nil, xerrors.Errorf("expected bls.PublicKey, got '%T'", pubkey)
 		}
 
 		pubkeys = append(pubkeys, bnKey.GetPoint())
@@ -279,9 +279,9 @@ func (a *Actor) Reshare(co crypto.CollectiveAuthority, thresholdNew int) error {
 
 		pubkey := pubkeyIter.GetNext()
 
-		bnKey, ok := pubkey.(bn256.PublicKey)
+		bnKey, ok := pubkey.(bls.PublicKey)
 		if !ok {
-			return xerrors.Errorf("expected bn256.PublicKey, got '%T'", pubkey)
+			return xerrors.Errorf("expected bls.PublicKey, got '%T'", pubkey)
 		}
 
 		pubkeysNew = append(pubkeysNew, bnKey.GetPoint())
