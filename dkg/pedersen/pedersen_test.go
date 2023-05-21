@@ -2,7 +2,6 @@ package pedersen
 
 import (
 	"testing"
-	"fmt"
 
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
@@ -98,13 +97,11 @@ func TestPedersen_Sign(t *testing.T) {
 	require.NoError(t, err)
 	pubPoly := priPoly.Commit(nil)
 	_, commits := pubPoly.Info()
-	fmt.Println(commits[0])
-	fmt.Println(pubPoly.Threshold())
 
 	actor := Actor{
 		rpc: fake.NewBadRPC(),
 		startRes: &state{dkgState: certified,
-			participants: []mino.Address{fake.NewAddress(0),fake.NewAddress(1)}, Commits: commits},
+			participants: []mino.Address{fake.NewAddress(0),fake.NewAddress(1)}, Commits: commits, threshold: 2},
 	}
 
 		msg :=[]byte("merry christmas")
@@ -116,8 +113,6 @@ func TestPedersen_Sign(t *testing.T) {
 	}
 
 	_, err = tbls.Recover(pairingSuite, pubPoly, msg, tsigs, 2, 2)
-	fmt.Println(pubPoly.Commit())
-	fmt.Println(pairingSuite, pubPoly, msg, tsigs, 2, 2)
 	require.NoError(t, err)
 
 	recv := fake.NewReceiver(

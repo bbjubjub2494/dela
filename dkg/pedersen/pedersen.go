@@ -3,7 +3,6 @@ package pedersen
 import (
 	"runtime"
 	"time"
-	"fmt"
 
 	"go.dedis.ch/dela"
 
@@ -18,7 +17,6 @@ import (
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/share"
-	kyber_bls "go.dedis.ch/kyber/v3/sign/bls"
 	"go.dedis.ch/kyber/v3/sign/tbls"
 	"go.dedis.ch/kyber/v3/suites"
 	"golang.org/x/net/context"
@@ -178,8 +176,6 @@ func (a *Actor) Setup(co crypto.CollectiveAuthority, threshold int) (kyber.Point
 		}
 	}
 
-	fmt.Println(a.startRes)
-
 	return dkgPubKeys[0], nil
 }
 
@@ -190,38 +186,6 @@ func (a *Actor) GetPublicKey() (kyber.Point, error) {
 	}
 
 	return a.startRes.getDistKey(), nil
-}
-
-func tbls_Recover(suite pairing.Suite, public *share.PubPoly, msg []byte, sigs [][]byte, t, n int) ([]byte, error) {
-	pubShares := make([]*share.PubShare, 0)
-	for _, sig := range sigs {
-		s := tbls.SigShare(sig)
-		i, err := s.Index()
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println(i, public.Eval(i).V, s.Value())
-		if err = kyber_bls.Verify(suite, public.Eval(i).V, msg, s.Value()); err != nil {
-			return nil, err
-		}
-		point := suite.G2().Point()
-		if err := point.UnmarshalBinary(s.Value()); err != nil {
-			return nil, err
-		}
-		pubShares = append(pubShares, &share.PubShare{I: i, V: point})
-		if len(pubShares) >= t {
-			break
-		}
-	}
-	commit, err := share.RecoverCommit(suite.G2(), pubShares, t, n)
-	if err != nil {
-		return nil, err
-	}
-	sig, err := commit.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	return sig, nil
 }
 
 // Sign implements dkg.Actor. It gets the private shares of the nodes and
@@ -259,13 +223,11 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 	}
 
 	sigShares := make([][]byte, len(addrs))
-	pubkey := share.NewPubPoly(suite, nil, a.startRes.Commits)
-	fmt.Println(a.startRes.Commits)
-	fmt.Println(pubkey)
+	pubPoly := share.NewPubPoly(suite, nil, a.startRes.Commits)
 
-	// TODO: set threshold
 	var n = len(addrs)
-	var t = n
+	var t = a.startRes.getThreshold()
+	println(t)
 
 	for i := 0; i < t; i++ {
 		src, message, err := receiver.Recv(ctx)
@@ -284,15 +246,24 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 		sigShares[i] = signReply.Share
 	}
 
-	fmt.Println(sigShares)
-
-	fmt.Println(suite.(pairing.Suite), pubkey, msg, sigShares, t, n)
-	signature, err := tbls.Recover(suite.(pairing.Suite), pubkey, msg, sigShares, t, n)
+	signature, err := tbls.Recover(suite.(pairing.Suite), pubPoly, msg, sigShares, t, n)
 	if err != nil {
 		return []byte{}, xerrors.Errorf("failed to recover signature: %v", err)
 	}
 
 	return signature, nil
+}
+
+func (a *Actor) Verify(msg, signature []byte) error {
+
+	if !a.startRes.Done() {
+		return xerrors.Errorf(initDkgFirst)
+	}
+
+	pubPoly := share.NewPubPoly(suite, nil, a.startRes.Commits)
+	pubkey := bls.NewPublicKeyFromPoint(pubPoly.Commit())
+
+	return pubkey.Verify(msg, bls.NewSignature(signature))
 }
 
 // Reshare implements dkg.Actor. It recreates the DKG with an updated list of

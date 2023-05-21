@@ -368,7 +368,6 @@ func TestResharingTwice(t *testing.T) {
 	message := []byte(testMessage)
 	sig, err := actors1[0].Sign(message)
 	require.NoError(t, err, "encrypting the message was not successful")
-	_ = sig
 
 	// Setting up the second dkg nCommon is the number of nodes that are common
 	// between the new and the old committee
