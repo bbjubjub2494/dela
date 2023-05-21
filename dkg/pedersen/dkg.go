@@ -90,8 +90,6 @@ type instance struct {
 	privShare *share.PriShare
 	privKey   kyber.Scalar
 
-	Commits []kyber.Point
-
 	startRes *state
 }
 
@@ -379,12 +377,12 @@ func (s *instance) finalize(ctx context.Context, from mino.Address, out mino.Sen
 	// Update the state before sending the acknowledgement to the orchestrator,
 	// so that it can process decrypt requests right away.
 	s.startRes.setDistKey(distKey.Public())
+	s.startRes.Commits = distKey.Commits
 
 	s.Lock()
 	s.privShare = distKey.PriShare()
-	s.Commits = distKey.Commits
-	fmt.Println("commits", s.Commits)
 	fmt.Println("share", distKey.Share)
+	fmt.Println("commits", distKey)
 	s.Unlock()
 
 	done := types.NewStartDone(distKey.Public())
