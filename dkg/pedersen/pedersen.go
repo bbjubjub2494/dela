@@ -18,6 +18,7 @@ import (
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/share"
+	kyber_bls "go.dedis.ch/kyber/v3/sign/bls"
 	"go.dedis.ch/kyber/v3/sign/tbls"
 	"go.dedis.ch/kyber/v3/suites"
 	"golang.org/x/net/context"
@@ -73,9 +74,6 @@ func NewPedersen(m mino.Mino) (*Pedersen, kyber.Point) {
 	s := pairingSuite.G2()
 	privkey := s.Scalar().Pick(suite.RandomStream())
 	pubkey := s.Point().Mul(privkey, nil)
-
-	fmt.Println(suite, suite.Point())
-	fmt.Println(pubkey.Equal(pubkey))
 
 	return &Pedersen{
 		privKey: privkey,
@@ -180,6 +178,8 @@ func (a *Actor) Setup(co crypto.CollectiveAuthority, threshold int) (kyber.Point
 		}
 	}
 
+	fmt.Println(a.startRes)
+
 	return dkgPubKeys[0], nil
 }
 
@@ -190,6 +190,38 @@ func (a *Actor) GetPublicKey() (kyber.Point, error) {
 	}
 
 	return a.startRes.getDistKey(), nil
+}
+
+func tbls_Recover(suite pairing.Suite, public *share.PubPoly, msg []byte, sigs [][]byte, t, n int) ([]byte, error) {
+	pubShares := make([]*share.PubShare, 0)
+	for _, sig := range sigs {
+		s := tbls.SigShare(sig)
+		i, err := s.Index()
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(i, public.Eval(i).V, s.Value())
+		if err = kyber_bls.Verify(suite, public.Eval(i).V, msg, s.Value()); err != nil {
+			return nil, err
+		}
+		point := suite.G2().Point()
+		if err := point.UnmarshalBinary(s.Value()); err != nil {
+			return nil, err
+		}
+		pubShares = append(pubShares, &share.PubShare{I: i, V: point})
+		if len(pubShares) >= t {
+			break
+		}
+	}
+	commit, err := share.RecoverCommit(suite.G2(), pubShares, t, n)
+	if err != nil {
+		return nil, err
+	}
+	sig, err := commit.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	return sig, nil
 }
 
 // Sign implements dkg.Actor. It gets the private shares of the nodes and
@@ -227,8 +259,8 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 	}
 
 	sigShares := make([][]byte, len(addrs))
-	pubkey := share.NewPubPoly(suite, suite.Point().Base(), a.startRes.Commits)
-	fmt.Println(suite, suite.Point().Base(), a.startRes.Commits)
+	pubkey := share.NewPubPoly(suite, nil, a.startRes.Commits)
+	fmt.Println(a.startRes.Commits)
 	fmt.Println(pubkey)
 
 	// TODO: set threshold
@@ -241,7 +273,7 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 			return []byte{}, xerrors.Errorf(unexpectedStreamStop, err)
 		}
 
-		dela.Logger.Debug().Msgf("Received a decryption reply from %v", src)
+		dela.Logger.Debug().Msgf("Received a signature reply from %v", src)
 
 		signReply, ok := message.(types.SignReply)
 		if !ok {
@@ -254,6 +286,7 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 
 	fmt.Println(sigShares)
 
+	fmt.Println(suite.(pairing.Suite), pubkey, msg, sigShares, t, n)
 	signature, err := tbls.Recover(suite.(pairing.Suite), pubkey, msg, sigShares, t, n)
 	if err != nil {
 		return []byte{}, xerrors.Errorf("failed to recover signature: %v", err)

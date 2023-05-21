@@ -97,8 +97,9 @@ func TestPedersen_Sign(t *testing.T) {
 	priPoly, err := share.RecoverPriPoly(bn256.NewSuite().G2(), priShares, 2, 2)
 	require.NoError(t, err)
 	pubPoly := priPoly.Commit(nil)
-	b, commits := pubPoly.Info()
-	fmt.Println(b)
+	_, commits := pubPoly.Info()
+	fmt.Println(commits[0])
+	fmt.Println(pubPoly.Threshold())
 
 	actor := Actor{
 		rpc: fake.NewBadRPC(),
@@ -113,6 +114,11 @@ func TestPedersen_Sign(t *testing.T) {
 	require.NoError(t, err)
 	tsigs = append(tsigs, tsig)
 	}
+
+	_, err = tbls.Recover(pairingSuite, pubPoly, msg, tsigs, 2, 2)
+	fmt.Println(pubPoly.Commit())
+	fmt.Println(pairingSuite, pubPoly, msg, tsigs, 2, 2)
+	require.NoError(t, err)
 
 	recv := fake.NewReceiver(
 		fake.NewRecvMsg(fake.NewAddress(0), types.NewSignReply(tsigs[0])),
@@ -146,7 +152,7 @@ func TestPedersen_Scenario(t *testing.T) {
 
 	dela.Logger = dela.Logger.Level(zerolog.WarnLevel)
 
-	n := 1
+	n := 2
 
 	minos := make([]mino.Mino, n)
 	dkgs := make([]dkg.DKG, n)
@@ -194,8 +200,6 @@ func TestPedersen_Scenario(t *testing.T) {
 
 	_, err = actors[0].Setup(fakeAuthority, n)
 	require.NoError(t, err)
-
-	println("hello")
 
 	_, err = actors[0].Setup(fakeAuthority, n)
 	require.EqualError(t, err, "startRes is already done, only one setup call is allowed")
