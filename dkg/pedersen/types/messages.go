@@ -1,40 +1,14 @@
 package types
 
 import (
+	"bytes"
 	"go.dedis.ch/dela/mino"
 	"go.dedis.ch/dela/serde"
 	"go.dedis.ch/dela/serde/registry"
 	"go.dedis.ch/kyber/v3"
+	"go.dedis.ch/kyber/v3/sign/tbls"
 	"golang.org/x/xerrors"
 )
-
-// Ciphertext provides the verifiable encryption function. A description can be
-// found in https://arxiv.org/pdf/2205.08529.pdf. The equivalent of each
-// parameter in the paper is written in front of it.
-type Ciphertext struct {
-	K    kyber.Point  // r
-	C    kyber.Point  // C
-	UBar kyber.Point  // ubar
-	E    kyber.Scalar // e
-	F    kyber.Scalar // f
-	GBar kyber.Point  // GBar
-}
-
-// ShareAndProof is the ShareAndProof provided by the verifiable decryption
-// function.
-//
-//	see: https://arxiv.org/pdf/2205.08529.pdf
-//
-// The equivalent of each parameter in the paper is mentioned.
-type ShareAndProof struct {
-	V  kyber.Point
-	I  int64
-	Ui kyber.Point  // u_i
-	Ei kyber.Scalar // e_i
-	Fi kyber.Scalar // f_i
-	Hi kyber.Point  // h_i
-
-}
 
 var msgFormats = registry.NewSimpleRegistry()
 
@@ -401,141 +375,58 @@ func (s StartDone) Serialize(ctx serde.Context) ([]byte, error) {
 	return data, nil
 }
 
-// DecryptRequest is a message sent to request a decryption.
+// SignRequest is a message sent to request a threshold signature share.
 //
 // - implements serde.Message
-type DecryptRequest struct {
-	K kyber.Point
-	C kyber.Point
+type SignRequest struct {
+	msg []byte
 }
 
-// NewDecryptRequest creates a new decryption request.
-func NewDecryptRequest(k, c kyber.Point) DecryptRequest {
-	return DecryptRequest{
-		K: k,
-		C: c,
+// NewSignRequest creates a new signature request.
+func NewSignRequest(msg []byte) SignRequest {
+	return SignRequest{
+		msg: bytes.Clone(msg),
 	}
 }
 
-// GetK returns K.
-func (req DecryptRequest) GetK() kyber.Point {
-	return req.K
-}
-
-// GetC returns C.
-func (req DecryptRequest) GetC() kyber.Point {
-	return req.C
+// GetMsg returns the message being signed.
+func (req SignRequest) GetMsg() []byte {
+	return bytes.Clone(req.msg)
 }
 
 // Serialize implements serde.Message.
-func (req DecryptRequest) Serialize(ctx serde.Context) ([]byte, error) {
+func (req SignRequest) Serialize(ctx serde.Context) ([]byte, error) {
 	format := msgFormats.Get(ctx.GetFormat())
 
 	data, err := format.Encode(ctx, req)
 	if err != nil {
-		return nil, xerrors.Errorf("couldn't encode decrypt request: %v", err)
+		return nil, xerrors.Errorf("couldn't encode sign request: %v", err)
 	}
 
 	return data, nil
 }
 
-// VerifiableDecryptRequest is a message sent to request a verifiable
-// decryption.
+// SignReply is the response of a decryption request.
 //
 // - implements serde.Message
-type VerifiableDecryptRequest struct {
-	ciphertexts []Ciphertext
+type SignReply struct {
+	Share tbls.SigShare
 }
 
-// NewVerifiableDecryptRequest creates a new verifiable decryption request.
-func NewVerifiableDecryptRequest(ciphertexts []Ciphertext) VerifiableDecryptRequest {
-	return VerifiableDecryptRequest{
-		ciphertexts: ciphertexts,
+// NewSignReply returns a new decryption reply.
+func NewSignReply(share tbls.SigShare) SignReply {
+	return SignReply{
+		Share: bytes.Clone(share),
 	}
-}
-
-// GetCiphertexts returns ciphertexts.
-func (req VerifiableDecryptRequest) GetCiphertexts() []Ciphertext {
-	return req.ciphertexts
 }
 
 // Serialize implements serde.Message.
-func (req VerifiableDecryptRequest) Serialize(ctx serde.Context) ([]byte, error) {
-	format := msgFormats.Get(ctx.GetFormat())
-
-	data, err := format.Encode(ctx, req)
-	if err != nil {
-		return nil, xerrors.Errorf("couldn't encode verifiable decrypt request: %v", err)
-	}
-
-	return data, nil
-}
-
-// DecryptReply is the response of a decryption request.
-//
-// - implements serde.Message
-type DecryptReply struct {
-	V kyber.Point
-	I int64
-}
-
-// NewDecryptReply returns a new decryption reply.
-func NewDecryptReply(i int64, v kyber.Point) DecryptReply {
-	return DecryptReply{
-		I: i,
-		V: v,
-	}
-}
-
-// GetV returns V.
-func (resp DecryptReply) GetV() kyber.Point {
-	return resp.V
-}
-
-// GetI returns I.
-func (resp DecryptReply) GetI() int64 {
-	return resp.I
-}
-
-// Serialize implements serde.Message.
-func (resp DecryptReply) Serialize(ctx serde.Context) ([]byte, error) {
+func (resp SignReply) Serialize(ctx serde.Context) ([]byte, error) {
 	format := msgFormats.Get(ctx.GetFormat())
 
 	data, err := format.Encode(ctx, resp)
 	if err != nil {
-		return nil, xerrors.Errorf("couldn't encode decrypt reply: %v", err)
-	}
-
-	return data, nil
-}
-
-// VerifiableDecryptReply is a message sent to request a verifiable
-// decryption.
-//
-// - implements serde.Message
-type VerifiableDecryptReply struct {
-	shareAndProof []ShareAndProof
-}
-
-// NewVerifiableDecryptReply creates a new verifiable decryption reply.
-func NewVerifiableDecryptReply(shareAndProof []ShareAndProof) VerifiableDecryptReply {
-	return VerifiableDecryptReply{
-		shareAndProof: shareAndProof,
-	}
-}
-
-// GetShareAndProof returns ShareAndProof.
-func (resp VerifiableDecryptReply) GetShareAndProof() []ShareAndProof {
-	return resp.shareAndProof
-}
-
-// Serialize implements serde.Message.
-func (resp VerifiableDecryptReply) Serialize(ctx serde.Context) ([]byte, error) {
-	format := msgFormats.Get(ctx.GetFormat())
-
-	data, err := format.Encode(ctx, resp)
-	if err != nil {
-		return nil, xerrors.Errorf("couldn't encode verifiable decrypt reply: %v", err)
+		return nil, xerrors.Errorf("couldn't encode sign reply: %v", err)
 	}
 
 	return data, nil

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/dela"
 	"go.dedis.ch/dela/crypto"
-	"go.dedis.ch/dela/crypto/ed25519"
+	"go.dedis.ch/dela/crypto/bls"
 	"go.dedis.ch/dela/dkg"
 	"go.dedis.ch/dela/dkg/pedersen/types"
 	"go.dedis.ch/dela/internal/testing/fake"
@@ -15,6 +15,9 @@ import (
 	"go.dedis.ch/dela/mino/minogrpc"
 	"go.dedis.ch/dela/mino/router/tree"
 	"go.dedis.ch/kyber/v3"
+	"go.dedis.ch/kyber/v3/pairing/bn256"
+	"go.dedis.ch/kyber/v3/share"
+	"go.dedis.ch/kyber/v3/sign/tbls"
 )
 
 func TestPedersen_Listen(t *testing.T) {
@@ -41,9 +44,9 @@ func TestPedersen_Setup(t *testing.T) {
 	actor.rpc = rpc
 
 	_, err = actor.Setup(fakeAuthority, 0)
-	require.EqualError(t, err, "expected ed25519.PublicKey, got 'fake.PublicKey'")
+	require.EqualError(t, err, "expected bls.PublicKey, got 'fake.PublicKey'")
 
-	fakeAuthority = fake.NewAuthority(2, ed25519.NewSigner)
+	fakeAuthority = fake.NewAuthority(2, bls.Generate)
 
 	_, err = actor.Setup(fakeAuthority, 1)
 	require.EqualError(t, err, fake.Err("failed to send start"))
@@ -85,63 +88,47 @@ func TestPedersen_GetPublicKey(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestPedersen_Decrypt(t *testing.T) {
+func TestPedersen_Sign(t *testing.T) {
+	priShares := []*share.PriShare{
+		&share.PriShare{0, suite.Scalar().Pick(suite.RandomStream())},
+		&share.PriShare{1, suite.Scalar().Pick(suite.RandomStream())},
+	}
+	priPoly, err := share.RecoverPriPoly(bn256.NewSuite().G2(), priShares, 2, 2)
+	require.NoError(t, err)
+	pubPoly := priPoly.Commit(nil)
+	_, commits := pubPoly.Info()
+
 	actor := Actor{
 		rpc: fake.NewBadRPC(),
 		startRes: &state{dkgState: certified,
-			participants: []mino.Address{fake.NewAddress(0)}, distrKey: suite.Point()},
+			participants: []mino.Address{fake.NewAddress(0), fake.NewAddress(1)}, Commits: commits, threshold: 2},
 	}
 
-	_, err := actor.Decrypt(suite.Point(), suite.Point())
-	require.EqualError(t, err, fake.Err("failed to create stream"))
+	msg := []byte("merry christmas")
+	var tsigs [][]byte
+	for i := range priShares {
+		tsig, err := tbls.Sign(pairingSuite, priShares[i], msg)
+		require.NoError(t, err)
+		tsigs = append(tsigs, tsig)
+	}
 
-	rpc := fake.NewStreamRPC(fake.NewBadReceiver(), fake.NewBadSender())
-	actor.rpc = rpc
-
-	_, err = actor.Decrypt(suite.Point(), suite.Point())
-	require.EqualError(t, err, fake.Err("failed to send decrypt request"))
-
-	recv := fake.NewReceiver(fake.NewRecvMsg(fake.NewAddress(0), nil))
-
-	rpc = fake.NewStreamRPC(recv, fake.Sender{})
-	actor.rpc = rpc
-
-	_, err = actor.Decrypt(suite.Point(), suite.Point())
-	require.EqualError(t, err, "got unexpected reply, expected types.DecryptReply but got: <nil>")
-
-	recv = fake.NewReceiver(
-		fake.NewRecvMsg(fake.NewAddress(0), types.DecryptReply{I: -1, V: suite.Point()}),
-	)
-
-	rpc = fake.NewStreamRPC(recv, fake.Sender{})
-	actor.rpc = rpc
-
-	_, err = actor.Decrypt(suite.Point(), suite.Point())
-	require.EqualError(t, err, "failed to recover commit: share: not enough "+
-		"good public shares to reconstruct secret commitment")
-
-	recv = fake.NewReceiver(
-		fake.NewRecvMsg(fake.NewAddress(0), types.DecryptReply{I: 1, V: suite.Point()}),
-	)
-
-	rpc = fake.NewStreamRPC(recv, fake.Sender{})
-	actor.rpc = rpc
-
-	_, err = actor.Decrypt(suite.Point(), suite.Point())
+	_, err = tbls.Recover(pairingSuite, pubPoly, msg, tsigs, 2, 2)
 	require.NoError(t, err)
-}
 
-func Test_Decrypt_StreamStop(t *testing.T) {
-	a := Actor{
-		rpc: fake.NewStreamRPC(fake.NewBadReceiver(), fake.Sender{}),
-		startRes: &state{
-			dkgState:     certified,
-			participants: []mino.Address{fake.NewAddress(0)},
-		},
-	}
+	recv := fake.NewReceiver(
+		fake.NewRecvMsg(fake.NewAddress(0), types.NewSignReply(tsigs[0])),
+		fake.NewRecvMsg(fake.NewAddress(1), types.NewSignReply(tsigs[1])),
+	)
 
-	_, err := a.Decrypt(nil, nil)
-	require.EqualError(t, err, fake.Err("stream stopped unexpectedly"))
+	rpc := fake.NewStreamRPC(recv, fake.Sender{})
+	actor.rpc = rpc
+
+	sig, err := actor.Sign(msg)
+	require.NoError(t, err)
+
+	// Expect a valid signature
+	err = bls.NewPublicKeyFromPoint(pubPoly.Commit()).Verify(msg, bls.NewSignature(sig))
+	require.NoError(t, err)
 }
 
 func TestPedersen_Scenario(t *testing.T) {
@@ -202,10 +189,8 @@ func TestPedersen_Scenario(t *testing.T) {
 		actors[i] = actor
 	}
 
-	// trying to call a decrypt/encrypt before a setup
-	_, _, _, err := actors[0].Encrypt(message)
-	require.EqualError(t, err, "you must first initialize DKG. Did you call setup() first?")
-	_, err = actors[0].Decrypt(nil, nil)
+	// trying to call sign before a setup
+	_, err := actors[0].Sign(message)
 	require.EqualError(t, err, "you must first initialize DKG. Did you call setup() first?")
 
 	_, err = actors[0].Setup(fakeAuthority, n)
@@ -214,59 +199,11 @@ func TestPedersen_Scenario(t *testing.T) {
 	_, err = actors[0].Setup(fakeAuthority, n)
 	require.EqualError(t, err, "startRes is already done, only one setup call is allowed")
 
-	// every node should be able to encrypt/decrypt
+	// every node should be able to sign
 	for i := 0; i < n; i++ {
-		K, C, remainder, err := actors[i].Encrypt(message)
+		_, err := actors[i].Sign(message)
 		require.NoError(t, err)
-		require.Len(t, remainder, 0)
-		decrypted, err := actors[i].Decrypt(K, C)
-		require.NoError(t, err)
-		require.Equal(t, message, decrypted)
 	}
-}
-
-func Test_Worker_BadProof(t *testing.T) {
-	ct := types.Ciphertext{
-		K:    suite.Point(),
-		C:    suite.Point(),
-		UBar: suite.Point(),
-		E:    suite.Scalar(),
-		F:    suite.Scalar(),
-		GBar: suite.Point(),
-	}
-
-	sap := types.ShareAndProof{
-		V:  suite.Point(),
-		I:  0,
-		Ui: suite.Point(),
-		Ei: suite.Scalar(),
-		Fi: suite.Scalar(),
-		Hi: suite.Point(),
-	}
-
-	w := worker{
-		numParticipants:  0,
-		decryptedMessage: [][]byte{},
-		ciphertexts: []types.Ciphertext{
-			ct,
-		},
-		responses: []types.VerifiableDecryptReply{types.NewVerifiableDecryptReply([]types.ShareAndProof{sap})},
-	}
-
-	err := w.work(0)
-	require.Regexp(t, "^failed to check the decryption proof: hash is not valid", err.Error())
-}
-
-func Test_Worker_BadRecover(t *testing.T) {
-	w := worker{
-		numParticipants:  2,
-		decryptedMessage: [][]byte{},
-		ciphertexts:      []types.Ciphertext{},
-		responses:        []types.VerifiableDecryptReply{},
-	}
-
-	err := w.work(0)
-	require.Regexp(t, "^failed to recover the commit:", err.Error())
 }
 
 func Test_Reshare_NotDone(t *testing.T) {
@@ -286,7 +223,7 @@ func Test_Reshare_WrongPK(t *testing.T) {
 	co := fake.NewAuthority(1, fake.NewSigner)
 
 	err := a.Reshare(co, 0)
-	require.EqualError(t, err, "expected ed25519.PublicKey, got 'fake.PublicKey'")
+	require.EqualError(t, err, "expected bls.PublicKey, got 'fake.PublicKey'")
 }
 
 func Test_Reshare_BadRPC(t *testing.T) {
@@ -361,7 +298,7 @@ func (ca CollectiveAuthority) GetPublicKey(addr mino.Address) (crypto.PublicKey,
 
 	for i, address := range ca.addrs {
 		if address.Equal(addr) {
-			return ed25519.NewPublicKeyFromPoint(ca.pubkeys[i]), i
+			return bls.NewPublicKeyFromPoint(ca.pubkeys[i]), i
 		}
 	}
 	return nil, -1
@@ -397,5 +334,5 @@ type fakeSigner struct {
 
 // GetPublicKey implements crypto.Signer
 func (s fakeSigner) GetPublicKey() crypto.PublicKey {
-	return ed25519.NewPublicKeyFromPoint(s.pubkey)
+	return bls.NewPublicKeyFromPoint(s.pubkey)
 }

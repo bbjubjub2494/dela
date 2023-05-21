@@ -2,7 +2,6 @@ package dkg
 
 import (
 	"go.dedis.ch/dela/crypto"
-	"go.dedis.ch/dela/dkg/pedersen/types"
 	"go.dedis.ch/kyber/v3"
 )
 
@@ -24,11 +23,8 @@ type Actor interface {
 	// setup has not been done.
 	GetPublicKey() (kyber.Point, error)
 
-	Encrypt(message []byte) (K, C kyber.Point, remainder []byte, err error)
-	Decrypt(K, C kyber.Point) ([]byte, error)
+	Sign(msg []byte) ([]byte, error)
+	Verify(msg, sig []byte) error
 
 	Reshare(co crypto.CollectiveAuthority, newThreshold int) error
-
-	VerifiableDecrypt(ciphertexts []types.Ciphertext) ([][]byte, error)
-	VerifiableEncrypt(message []byte, GBar kyber.Point) (ciphertext types.Ciphertext, remainder []byte, err error)
 }

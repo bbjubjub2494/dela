@@ -66,9 +66,8 @@ type StartDone struct {
 	PublicKey PublicKey
 }
 
-type DecryptRequest struct {
-	K []byte
-	C []byte
+type SignRequest struct {
+	Msg []byte
 }
 
 type Ciphertext struct {
@@ -80,13 +79,8 @@ type Ciphertext struct {
 	GBar PublicKey // GBar
 }
 
-type VerifiableDecryptRequest struct {
-	Ciphertexts []Ciphertext
-}
-
-type DecryptReply struct {
-	V []byte
-	I int64
+type SignReply struct {
+	Share []byte
 }
 
 type ShareAndProof struct {
@@ -99,10 +93,6 @@ type ShareAndProof struct {
 
 }
 
-type VerifiableDecryptReply struct {
-	Sp []ShareAndProof
-}
-
 type Message struct {
 	Start                    *Start                    `json:",omitempty"`
 	StartResharing           *StartResharing           `json:",omitempty"`
@@ -110,10 +100,8 @@ type Message struct {
 	Reshare                  *Reshare                  `json:",omitempty"`
 	Response                 *Response                 `json:",omitempty"`
 	StartDone                *StartDone                `json:",omitempty"`
-	DecryptRequest           *DecryptRequest           `json:",omitempty"`
-	DecryptReply             *DecryptReply             `json:",omitempty"`
-	VerifiableDecryptReply   *VerifiableDecryptReply   `json:",omitempty"`
-	VerifiableDecryptRequest *VerifiableDecryptRequest `json:",omitempty"`
+	SignRequest           *SignRequest           `json:",omitempty"`
+	SignReply             *SignReply             `json:",omitempty"`
 }
 
 // MsgFormat is the engine to encode and decode dkg messages in JSON format.
@@ -125,7 +113,7 @@ type msgFormat struct {
 
 func newMsgFormat() msgFormat {
 	return msgFormat{
-		suite: suites.MustFind("Ed25519"),
+		suite: suites.MustFind("BN256.G2"),
 	}
 }
 
@@ -169,14 +157,10 @@ func (f msgFormat) Encode(ctx serde.Context, msg serde.Message) ([]byte, error) 
 		m = Message{Response: &r}
 	case types.StartDone:
 		m, err = encodeStartDone(in)
-	case types.DecryptRequest:
-		m, err = encodeDecryptRequest(in)
-	case types.VerifiableDecryptRequest:
-		m, err = encodeVerifiableDecryptRequest(in)
-	case types.DecryptReply:
-		m, err = encodeDecryptReply(in)
-	case types.VerifiableDecryptReply:
-		m, err = encodeVerifiableDecryptReply(in)
+	case types.SignRequest:
+		m, err = encodeSignRequest(in)
+	case types.SignReply:
+		m, err = encodeSignReply(in)
 	default:
 		return nil, xerrors.Errorf("unsupported message of type '%T'", msg)
 	}
@@ -242,17 +226,11 @@ func (f msgFormat) Decode(ctx serde.Context, data []byte) (serde.Message, error)
 	case m.StartDone != nil:
 		return f.decodeStartDone(ctx, m.StartDone)
 
-	case m.DecryptRequest != nil:
-		return f.decodeDecryptRequest(ctx, m.DecryptRequest)
+	case m.SignRequest != nil:
+		return f.decodeSignRequest(ctx, m.SignRequest)
 
-	case m.VerifiableDecryptRequest != nil:
-		return f.decodeVerifiableDecryptRequest(ctx, m.VerifiableDecryptRequest)
-
-	case m.DecryptReply != nil:
-		return f.decodeDecryptReply(ctx, m.DecryptReply)
-
-	case m.VerifiableDecryptReply != nil:
-		return f.decodeVerifiableDecryptReply(ctx, m.VerifiableDecryptReply)
+	case m.SignReply != nil:
+		return f.decodeSignReply(ctx, m.SignReply)
 	}
 
 	return nil, xerrors.New("message is empty")
@@ -501,280 +479,29 @@ func (f msgFormat) decodeStartDone(ctx serde.Context, msg *StartDone) (serde.Mes
 	return ack, nil
 }
 
-func encodeDecryptRequest(msg types.DecryptRequest) (Message, error) {
-	k, err := msg.GetK().MarshalBinary()
-	if err != nil {
-		return Message{}, xerrors.Errorf("couldn't marshal K: %v", err)
+func encodeSignRequest(msg types.SignRequest) (Message, error) {
+	req := SignRequest{
+		Msg: msg.GetMsg(),
 	}
 
-	c, err := msg.GetC().MarshalBinary()
-	if err != nil {
-		return Message{}, xerrors.Errorf("couldn't marshal C: %v", err)
-	}
 
-	req := DecryptRequest{
-		K: k,
-		C: c,
-	}
-
-	return Message{DecryptRequest: &req}, nil
+	return Message{SignRequest: &req}, nil
 }
 
-func (f msgFormat) decodeDecryptRequest(ctx serde.Context, msg *DecryptRequest) (serde.Message, error) {
-	k := f.suite.Point()
-	err := k.UnmarshalBinary(msg.K)
-	if err != nil {
-		return nil, xerrors.Errorf("couldn't unmarshal K: %v", err)
-	}
-
-	c := f.suite.Point()
-	err = c.UnmarshalBinary(msg.C)
-	if err != nil {
-		return nil, xerrors.Errorf("couldn't unmarshal C: %v", err)
-	}
-
-	req := types.NewDecryptRequest(k, c)
+func (f msgFormat) decodeSignRequest(ctx serde.Context, msg *SignRequest) (serde.Message, error) {
+	req := types.NewSignRequest(msg.Msg)
 
 	return req, nil
 }
 
-func encodeVerifiableDecryptRequest(msg types.VerifiableDecryptRequest) (Message, error) {
-	ciphertexts := msg.GetCiphertexts()
-	var encodedCiphertexts []Ciphertext
+func encodeSignReply(msg types.SignReply) (Message, error) {
+	resp := SignReply{ []byte(msg.Share) }
 
-	for _, cp := range ciphertexts {
-		K, err := cp.K.MarshalBinary()
-		if err != nil {
-			return Message{}, xerrors.Errorf("couldn't marshal K: %v", err)
-		}
-
-		C, err := cp.C.MarshalBinary()
-		if err != nil {
-			return Message{}, xerrors.Errorf("couldn't marshal C: %v", err)
-		}
-
-		UBar, err := cp.UBar.MarshalBinary()
-		if err != nil {
-			return Message{}, xerrors.Errorf("couldn't marshal UBar: %v", err)
-		}
-
-		E, err := cp.E.MarshalBinary()
-		if err != nil {
-			return Message{}, xerrors.Errorf("couldn't marshal E: %v", err)
-		}
-
-		F, err := cp.F.MarshalBinary()
-		if err != nil {
-			return Message{}, xerrors.Errorf("couldn't marshal F: %v", err)
-		}
-
-		GBar, err := cp.GBar.MarshalBinary()
-		if err != nil {
-			return Message{}, xerrors.Errorf("couldn't marshal GBar: %v", err)
-		}
-
-		encodedCp := Ciphertext{
-			C:    C,
-			K:    K,
-			UBar: UBar,
-			E:    E,
-			F:    F,
-			GBar: GBar,
-		}
-
-		encodedCiphertexts = append(encodedCiphertexts, encodedCp)
-	}
-
-	req := VerifiableDecryptRequest{
-		Ciphertexts: encodedCiphertexts,
-	}
-
-	return Message{VerifiableDecryptRequest: &req}, nil
+	return Message{SignReply: &resp}, nil
 }
 
-func (f msgFormat) decodeVerifiableDecryptRequest(ctx serde.Context,
-	msg *VerifiableDecryptRequest) (serde.Message, error) {
-
-	ciphertexts := msg.Ciphertexts
-	decodedCiphertexts := []types.Ciphertext{}
-
-	for _, cp := range ciphertexts {
-		K := f.suite.Point()
-		err := K.UnmarshalBinary(cp.K)
-		if err != nil {
-			return nil, xerrors.Errorf("couldn't unmarshal K: %v", err)
-		}
-
-		C := f.suite.Point()
-		err = C.UnmarshalBinary(cp.C)
-		if err != nil {
-			return nil, xerrors.Errorf("couldn't unmarshal C: %v", err)
-		}
-
-		UBar := f.suite.Point()
-		err = UBar.UnmarshalBinary(cp.UBar)
-		if err != nil {
-			return nil, xerrors.Errorf("couldn't unmarshal Ubar: %v", err)
-		}
-
-		E := f.suite.Scalar()
-		err = E.UnmarshalBinary(cp.E)
-		if err != nil {
-			return nil, xerrors.Errorf("couldn't unmarshal E: %v", err)
-		}
-
-		F := f.suite.Scalar()
-		err = F.UnmarshalBinary(cp.F)
-		if err != nil {
-			return nil, xerrors.Errorf("couldn't unmarshal F: %v", err)
-		}
-
-		GBar := f.suite.Point()
-		err = GBar.UnmarshalBinary(cp.GBar)
-		if err != nil {
-			return nil, xerrors.Errorf("couldn't unmarshal GBar: %v", err)
-		}
-
-		decodedCp := types.Ciphertext{
-			K:    K,
-			C:    C,
-			UBar: UBar,
-			E:    E,
-			F:    F,
-			GBar: GBar,
-		}
-		decodedCiphertexts = append(decodedCiphertexts, decodedCp)
-	}
-
-	resp := types.NewVerifiableDecryptRequest(decodedCiphertexts)
-
-	return resp, nil
-}
-
-func encodeDecryptReply(msg types.DecryptReply) (Message, error) {
-	v, err := msg.GetV().MarshalBinary()
-	if err != nil {
-		return Message{}, xerrors.Errorf("couldn't marshal V: %v", err)
-	}
-
-	resp := DecryptReply{
-		V: v,
-		I: msg.GetI(),
-	}
-
-	return Message{DecryptReply: &resp}, nil
-}
-
-func (f msgFormat) decodeDecryptReply(ctx serde.Context, msg *DecryptReply) (serde.Message, error) {
-	v := f.suite.Point()
-	err := v.UnmarshalBinary(msg.V)
-	if err != nil {
-		return nil, xerrors.Errorf("couldn't unmarshal V: %v", err)
-	}
-
-	resp := types.NewDecryptReply(msg.I, v)
-
-	return resp, nil
-}
-
-func encodeVerifiableDecryptReply(msg types.VerifiableDecryptReply) (Message, error) {
-	sps := msg.GetShareAndProof()
-	var encodedSps []ShareAndProof
-
-	for _, sp := range sps {
-		V, err := sp.V.MarshalBinary()
-		if err != nil {
-			return Message{}, xerrors.Errorf("couldn't marshal V: %v", err)
-		}
-
-		Ui, err := sp.Ui.MarshalBinary()
-		if err != nil {
-			return Message{}, xerrors.Errorf("couldn't marshal U_i: %v", err)
-		}
-
-		Ei, err := sp.Ei.MarshalBinary()
-		if err != nil {
-			return Message{}, xerrors.Errorf("couldn't marshal E_i: %v", err)
-		}
-
-		Fi, err := sp.Fi.MarshalBinary()
-		if err != nil {
-			return Message{}, xerrors.Errorf("couldn't marshal F_i: %v", err)
-		}
-
-		Hi, err := sp.Hi.MarshalBinary()
-		if err != nil {
-			return Message{}, xerrors.Errorf("couldn't marshal H_i: %v", err)
-		}
-
-		encodedSp := ShareAndProof{
-			V:  V,
-			I:  sp.I,
-			Ui: Ui,
-			Ei: Ei,
-			Fi: Fi,
-			Hi: Hi,
-		}
-		encodedSps = append(encodedSps, encodedSp)
-	}
-
-	req := VerifiableDecryptReply{
-		Sp: encodedSps,
-	}
-
-	return Message{VerifiableDecryptReply: &req}, nil
-}
-
-func (f msgFormat) decodeVerifiableDecryptReply(ctx serde.Context,
-	msg *VerifiableDecryptReply) (serde.Message, error) {
-
-	sps := msg.Sp
-	decodedSps := []types.ShareAndProof{}
-
-	for _, sp := range sps {
-		V := f.suite.Point()
-		err := V.UnmarshalBinary(sp.V)
-		if err != nil {
-			return nil, xerrors.Errorf("couldn't unmarshal V: %v", err)
-		}
-
-		Ei := f.suite.Scalar()
-		err = Ei.UnmarshalBinary(sp.Ei)
-		if err != nil {
-			return nil, xerrors.Errorf("couldn't unmarshal E_i: %v", err)
-		}
-
-		Ui := f.suite.Point()
-		err = Ui.UnmarshalBinary(sp.Ui)
-		if err != nil {
-			return nil, xerrors.Errorf("couldn't unmarshal U_i: %v", err)
-		}
-
-		Fi := f.suite.Scalar()
-		err = Fi.UnmarshalBinary(sp.Fi)
-		if err != nil {
-			return nil, xerrors.Errorf("couldn't unmarshal F_i: %v", err)
-		}
-
-		Hi := f.suite.Point()
-		err = Hi.UnmarshalBinary(sp.Hi)
-		if err != nil {
-			return nil, xerrors.Errorf("couldn't unmarshal H_i: %v", err)
-		}
-
-		decodedSp := types.ShareAndProof{
-			V:  V,
-			I:  sp.I,
-			Ui: Ui,
-			Ei: Ei,
-			Fi: Fi,
-			Hi: Hi,
-		}
-
-		decodedSps = append(decodedSps, decodedSp)
-	}
-
-	resp := types.NewVerifiableDecryptReply(decodedSps)
+func (f msgFormat) decodeSignReply(ctx serde.Context, msg *SignReply) (serde.Message, error) {
+	resp := types.NewSignReply(msg.Share)
 
 	return resp, nil
 }

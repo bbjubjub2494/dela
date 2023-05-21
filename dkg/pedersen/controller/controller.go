@@ -47,55 +47,29 @@ func (m minimal) SetCommands(builder node.Builder) {
 	)
 	sub.SetAction(builder.MakeAction(setupAction{}))
 
-	sub = cmd.SetSubCommand("encrypt")
-	sub.SetDescription("encrypt a message. Outputs <hex(K)>:<hex(C)>:<hex(remainder)>")
+	sub = cmd.SetSubCommand("sign")
+	sub.SetDescription("sign a message. Outputs signature in hex")
 	sub.SetFlags(
 		cli.StringFlag{
 			Name:  "message",
-			Usage: "the message to encrypt, encoded in hex",
+			Usage: "the message to sign, encoded in hex",
 		},
 	)
-	sub.SetAction(builder.MakeAction(encryptAction{}))
+	sub.SetAction(builder.MakeAction(signAction{}))
 
-	sub = cmd.SetSubCommand("decrypt")
-	sub.SetDescription("decrypt a message")
-	sub.SetFlags(
-		cli.StringFlag{
-			Name:  "encrypted",
-			Usage: "the encrypted string, as <hex(K)>:<hex(C)>",
-		},
-	)
-	sub.SetAction(builder.MakeAction(decryptAction{}))
-
-	sub = cmd.SetSubCommand("verifiableEncrypt")
-	sub.SetDescription("encrypt a message and provides a proof. " +
-		"Outputs <hex(K)>:<hex(C)>:<hex(Ubar)>:<hex(E)>:<hex(F)>:<hex(remainder)>")
+	sub = cmd.SetSubCommand("verify")
+	sub.SetDescription("verify a threshold signature")
 	sub.SetFlags(
 		cli.StringFlag{
 			Name:  "message",
-			Usage: "the message to encrypt, encoded in hex",
+			Usage: "the message that was sign, encoded in hex",
 		},
 		cli.StringFlag{
-			Name:  "GBar",
-			Usage: "the second generator",
+			Name:  "signature",
+			Usage: "the signature, encoded in hex",
 		},
 	)
-	sub.SetAction(builder.MakeAction(verifiableEncryptAction{}))
-
-	sub = cmd.SetSubCommand("verifiableDecrypt")
-	sub.SetDescription("decrypt a message and verify the decryption and encryption proof")
-	sub.SetFlags(
-		cli.StringFlag{
-			Name: "ciphertexts",
-			Usage: "a list of ciphertext strings " +
-				"<hex(K)>:<hex(C)>:<hex(Ubar)>:<hex(E)>:<hex(F)>[:<hex(k)>:...]",
-		},
-		cli.StringFlag{
-			Name:  "GBar",
-			Usage: "the second generator",
-		},
-	)
-	sub.SetAction(builder.MakeAction(verifiableDecryptAction{}))
+	sub.SetAction(builder.MakeAction(verifyAction{}))
 
 	sub = cmd.SetSubCommand("reshare")
 	sub.SetDescription("reshare the DKG secret")

@@ -237,20 +237,8 @@ func TestStartDone_Serialize(t *testing.T) {
 	require.EqualError(t, err, fake.Err("couldn't encode ack"))
 }
 
-func TestDecryptRequest_GetK(t *testing.T) {
-	req := NewDecryptRequest(fakePoint{}, nil)
-
-	require.Equal(t, fakePoint{}, req.GetK())
-}
-
-func TestDecryptRequest_GetC(t *testing.T) {
-	req := NewDecryptRequest(nil, fakePoint{})
-
-	require.Equal(t, fakePoint{}, req.GetC())
-}
-
-func TestDecryptRequest_Serialize(t *testing.T) {
-	req := DecryptRequest{}
+func TestSignRequest_Serialize(t *testing.T) {
+	req := SignRequest{}
 
 	data, err := req.Serialize(fake.NewContext())
 	require.NoError(t, err)
@@ -258,63 +246,6 @@ func TestDecryptRequest_Serialize(t *testing.T) {
 
 	_, err = req.Serialize(fake.NewBadContext())
 	require.EqualError(t, err, fake.Err("couldn't encode decrypt request"))
-}
-
-func TestVerifiableDecryptRequest_Get(t *testing.T) {
-	req := NewVerifiableDecryptRequest([]Ciphertext{{}, {}})
-
-	require.Len(t, req.GetCiphertexts(), 2)
-}
-
-func TestVerifiableDecryptRequest_Serialize(t *testing.T) {
-	req := VerifiableDecryptRequest{}
-
-	data, err := req.Serialize(fake.NewContext())
-	require.NoError(t, err)
-	require.Equal(t, fake.GetFakeFormatValue(), data)
-
-	_, err = req.Serialize(fake.NewBadContext())
-	require.EqualError(t, err, fake.Err("couldn't encode verifiable decrypt request"))
-}
-
-func TestDecryptReply_GetV(t *testing.T) {
-	resp := NewDecryptReply(0, fakePoint{})
-
-	require.Equal(t, fakePoint{}, resp.GetV())
-}
-
-func TestDecryptReply_GetI(t *testing.T) {
-	resp := NewDecryptReply(1, nil)
-
-	require.Equal(t, int64(1), resp.GetI())
-}
-
-func TestDecryptReply_Serialize(t *testing.T) {
-	resp := DecryptReply{}
-
-	data, err := resp.Serialize(fake.NewContext())
-	require.NoError(t, err)
-	require.Equal(t, fake.GetFakeFormatValue(), data)
-
-	_, err = resp.Serialize(fake.NewBadContext())
-	require.EqualError(t, err, fake.Err("couldn't encode decrypt reply"))
-}
-
-func TestVerifiableDecryptReply_Get(t *testing.T) {
-	req := NewVerifiableDecryptReply([]ShareAndProof{{}, {}})
-
-	require.Len(t, req.GetShareAndProof(), 2)
-}
-
-func TestVerifiableDecryptReply_Serialize(t *testing.T) {
-	req := VerifiableDecryptReply{}
-
-	data, err := req.Serialize(fake.NewContext())
-	require.NoError(t, err)
-	require.Equal(t, fake.GetFakeFormatValue(), data)
-
-	_, err = req.Serialize(fake.NewBadContext())
-	require.EqualError(t, err, fake.Err("couldn't encode verifiable decrypt reply"))
 }
 
 func TestMessageFactory(t *testing.T) {
