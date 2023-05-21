@@ -17,6 +17,7 @@ import (
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/pairing"
 	"go.dedis.ch/kyber/v3/share"
+	kyber_bls "go.dedis.ch/kyber/v3/sign/bls"
 	"go.dedis.ch/kyber/v3/sign/tbls"
 	"go.dedis.ch/kyber/v3/suites"
 	"golang.org/x/net/context"
@@ -69,9 +70,7 @@ type Pedersen struct {
 func NewPedersen(m mino.Mino) (*Pedersen, kyber.Point) {
 	factory := types.NewMessageFactory(m.GetAddressFactory())
 
-	s := pairingSuite.G2()
-	privkey := s.Scalar().Pick(suite.RandomStream())
-	pubkey := s.Point().Mul(privkey, nil)
+	privkey, pubkey := kyber_bls.NewKeyPair(pairingSuite, suite.RandomStream())
 
 	return &Pedersen{
 		privKey: privkey,
