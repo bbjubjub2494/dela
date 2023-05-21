@@ -217,7 +217,7 @@ func TestResharing_minogrpc(t *testing.T) {
 	message := []byte(testMessage)
 	sig, err := actorsOld[0].Sign(message)
 	require.NoError(t, err, "signing the message was not successful")
-	_ = sig// TODO: verify
+	_ = sig // TODO: verify
 
 	// Setting up the second dkg. nCommon is the number of nodes that are common
 	// between the new and the old committee

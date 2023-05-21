@@ -15,9 +15,9 @@ import (
 	"go.dedis.ch/dela/mino/minogrpc"
 	"go.dedis.ch/dela/mino/router/tree"
 	"go.dedis.ch/kyber/v3"
+	"go.dedis.ch/kyber/v3/pairing/bn256"
 	"go.dedis.ch/kyber/v3/share"
 	"go.dedis.ch/kyber/v3/sign/tbls"
-	"go.dedis.ch/kyber/v3/pairing/bn256"
 )
 
 func TestPedersen_Listen(t *testing.T) {
@@ -101,15 +101,15 @@ func TestPedersen_Sign(t *testing.T) {
 	actor := Actor{
 		rpc: fake.NewBadRPC(),
 		startRes: &state{dkgState: certified,
-			participants: []mino.Address{fake.NewAddress(0),fake.NewAddress(1)}, Commits: commits, threshold: 2},
+			participants: []mino.Address{fake.NewAddress(0), fake.NewAddress(1)}, Commits: commits, threshold: 2},
 	}
 
-		msg :=[]byte("merry christmas")
+	msg := []byte("merry christmas")
 	var tsigs [][]byte
 	for i := range priShares {
-	tsig, err := tbls.Sign(pairingSuite, priShares[i], msg)
-	require.NoError(t, err)
-	tsigs = append(tsigs, tsig)
+		tsig, err := tbls.Sign(pairingSuite, priShares[i], msg)
+		require.NoError(t, err)
+		tsigs = append(tsigs, tsig)
 	}
 
 	_, err = tbls.Recover(pairingSuite, pubPoly, msg, tsigs, 2, 2)
@@ -127,7 +127,7 @@ func TestPedersen_Sign(t *testing.T) {
 	require.NoError(t, err)
 
 	// Expect a valid signature
-	err = bls.NewPublicKeyFromPoint(pubPoly.Commit()).Verify( msg, bls.NewSignature(sig))
+	err = bls.NewPublicKeyFromPoint(pubPoly.Commit()).Verify(msg, bls.NewSignature(sig))
 	require.NoError(t, err)
 }
 
@@ -205,7 +205,6 @@ func TestPedersen_Scenario(t *testing.T) {
 		require.NoError(t, err)
 	}
 }
-
 
 func Test_Reshare_NotDone(t *testing.T) {
 	a := Actor{
