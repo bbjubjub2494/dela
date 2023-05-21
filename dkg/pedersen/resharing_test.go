@@ -513,4 +513,7 @@ func TestResharingTwice(t *testing.T) {
 		newPubKey.Equal(oldPubKey)
 	}
 
+	err = actors3[0].Verify(message, sig)
+	require.NoError(t, err)
+
 }

@@ -147,7 +147,7 @@ func TestPedersen_Scenario(t *testing.T) {
 
 	dela.Logger = dela.Logger.Level(zerolog.WarnLevel)
 
-	n := 2
+	n := 32
 
 	minos := make([]mino.Mino, n)
 	dkgs := make([]dkg.DKG, n)

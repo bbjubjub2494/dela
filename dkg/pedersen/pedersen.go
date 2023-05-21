@@ -132,12 +132,12 @@ func (a *Actor) Setup(co crypto.CollectiveAuthority, threshold int) (kyber.Point
 		addrs = append(addrs, addrIter.GetNext())
 
 		pubkey := pubkeyIter.GetNext()
-		bnKey, ok := pubkey.(bls.PublicKey)
+		blsKey, ok := pubkey.(bls.PublicKey)
 		if !ok {
 			return nil, xerrors.Errorf("expected bls.PublicKey, got '%T'", pubkey)
 		}
 
-		pubkeys = append(pubkeys, bnKey.GetPoint())
+		pubkeys = append(pubkeys, blsKey.GetPoint())
 	}
 
 	message := types.NewStart(threshold, addrs, pubkeys)
@@ -227,7 +227,6 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 
 	var n = len(addrs)
 	var t = a.startRes.getThreshold()
-	println(t)
 
 	for i := 0; i < t; i++ {
 		src, message, err := receiver.Recv(ctx)
@@ -260,10 +259,12 @@ func (a *Actor) Verify(msg, signature []byte) error {
 		return xerrors.Errorf(initDkgFirst)
 	}
 
-	pubPoly := share.NewPubPoly(suite, nil, a.startRes.Commits)
-	pubkey := bls.NewPublicKeyFromPoint(pubPoly.Commit())
+	pubkey, err := a.GetPublicKey()
+	if err != nil {
+		return err
+	}
 
-	return pubkey.Verify(msg, bls.NewSignature(signature))
+	return bls.NewPublicKeyFromPoint(pubkey).Verify(msg, bls.NewSignature(signature))
 }
 
 // Reshare implements dkg.Actor. It recreates the DKG with an updated list of
@@ -284,12 +285,12 @@ func (a *Actor) Reshare(co crypto.CollectiveAuthority, thresholdNew int) error {
 
 		pubkey := pubkeyIter.GetNext()
 
-		bnKey, ok := pubkey.(bls.PublicKey)
+		blsKey, ok := pubkey.(bls.PublicKey)
 		if !ok {
 			return xerrors.Errorf("expected bls.PublicKey, got '%T'", pubkey)
 		}
 
-		pubkeysNew = append(pubkeysNew, bnKey.GetPoint())
+		pubkeysNew = append(pubkeysNew, blsKey.GetPoint())
 	}
 
 	// Get the union of the new members and the old members

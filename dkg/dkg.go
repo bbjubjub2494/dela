@@ -24,6 +24,7 @@ type Actor interface {
 	GetPublicKey() (kyber.Point, error)
 
 	Sign(msg []byte) ([]byte, error)
+	Verify(msg, sig []byte) error
 
 	Reshare(co crypto.CollectiveAuthority, newThreshold int) error
 }

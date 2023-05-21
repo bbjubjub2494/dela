@@ -2,7 +2,6 @@ package pedersen
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"sync"
 
@@ -381,8 +380,6 @@ func (s *instance) finalize(ctx context.Context, from mino.Address, out mino.Sen
 
 	s.Lock()
 	s.privShare = distKey.PriShare()
-	fmt.Println("share", distKey.Share)
-	fmt.Println("commits", distKey)
 	s.Unlock()
 
 	done := types.NewStartDone(distKey.Public())
