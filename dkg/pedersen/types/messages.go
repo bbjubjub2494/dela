@@ -10,34 +10,6 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// Ciphertext provides the verifiable encryption function. A description can be
-// found in https://arxiv.org/pdf/2205.08529.pdf. The equivalent of each
-// parameter in the paper is written in front of it.
-type Ciphertext struct {
-	K    kyber.Point  // r
-	C    kyber.Point  // C
-	UBar kyber.Point  // ubar
-	E    kyber.Scalar // e
-	F    kyber.Scalar // f
-	GBar kyber.Point  // GBar
-}
-
-// ShareAndProof is the ShareAndProof provided by the verifiable decryption
-// function.
-//
-//	see: https://arxiv.org/pdf/2205.08529.pdf
-//
-// The equivalent of each parameter in the paper is mentioned.
-type ShareAndProof struct {
-	V  kyber.Point
-	I  int64
-	Ui kyber.Point  // u_i
-	Ei kyber.Scalar // e_i
-	Fi kyber.Scalar // f_i
-	Hi kyber.Point  // h_i
-
-}
-
 var msgFormats = registry.NewSimpleRegistry()
 
 // RegisterMessageFormat register the engine for the provided format.

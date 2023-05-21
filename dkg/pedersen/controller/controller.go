@@ -57,17 +57,19 @@ func (m minimal) SetCommands(builder node.Builder) {
 	)
 	sub.SetAction(builder.MakeAction(signAction{}))
 
-	/*
-	sub = cmd.SetSubCommand("decrypt")
-	sub.SetDescription("decrypt a message")
+	sub = cmd.SetSubCommand("verify")
+	sub.SetDescription("verify a threshold signature")
 	sub.SetFlags(
 		cli.StringFlag{
-			Name:  "encrypted",
-			Usage: "the encrypted string, as <hex(K)>:<hex(C)>",
+			Name:  "message",
+			Usage: "the message that was sign, encoded in hex",
+		},
+		cli.StringFlag{
+			Name:  "signature",
+			Usage: "the signature, encoded in hex",
 		},
 	)
-	sub.SetAction(builder.MakeAction(decryptAction{}))
-	*/
+	sub.SetAction(builder.MakeAction(verifyAction{}))
 
 	sub = cmd.SetSubCommand("reshare")
 	sub.SetDescription("reshare the DKG secret")

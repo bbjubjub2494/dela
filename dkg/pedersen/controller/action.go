@@ -197,10 +197,9 @@ func (a signAction) Execute(ctx node.Context) error {
 	return nil
 }
 
-/*
-type decryptAction struct{}
+type verifyAction struct{}
 
-func (a decryptAction) Execute(ctx node.Context) error {
+func (a verifyAction) Execute(ctx node.Context) error {
 	var actor dkg.Actor
 
 	err := ctx.Injector.Resolve(&actor)
@@ -208,23 +207,23 @@ func (a decryptAction) Execute(ctx node.Context) error {
 		return xerrors.Errorf(resolveActorFailed, err)
 	}
 
-	encrypted := ctx.Flags.String("encrypted")
-
-	k, c, err := decodeEncrypted(encrypted)
+	message, err := hex.DecodeString(ctx.Flags.String("message"))
 	if err != nil {
-		return xerrors.Errorf("failed to decode encrypted str: %v", err)
+		return xerrors.Errorf("failed to decode message: %v", err)
 	}
 
-	decrypted, err := actor.Decrypt(k, c)
+	signature, err := hex.DecodeString(ctx.Flags.String("signature"))
 	if err != nil {
-		return xerrors.Errorf("failed to decrypt: %v", err)
+		return xerrors.Errorf("failed to decode signature: %v", err)
 	}
 
-	fmt.Fprint(ctx.Out, hex.EncodeToString(decrypted))
+	err = actor.Verify(message, signature)
+	if err != nil {
+		return xerrors.Errorf("failed to verify: %v", err)
+	}
 
 	return nil
 }
-*/
 
 // reshare
 
