@@ -226,7 +226,7 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 	var n = len(addrs)
 	var t = a.startRes.getThreshold()
 	if t == 0 {
-		t = 1
+		t = n
 	}
 	sigShares := make([][]byte, t)
 

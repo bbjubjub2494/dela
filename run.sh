@@ -34,5 +34,7 @@ dkgcli --config $TEMPDIR/node1 dkg setup \
 
 message=deadbeef # hexadecimal
 
-# Do the setup in one of the node:
+# Sign with all 3 nodes for demo purposes
 dkgcli --config $TEMPDIR/node1 dkg sign -message $message
+dkgcli --config $TEMPDIR/node2 dkg sign -message $message
+dkgcli --config $TEMPDIR/node3 dkg sign -message $message
