@@ -221,11 +221,14 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 		return nil, xerrors.Errorf("failed to send decrypt request: %v", err)
 	}
 
-	sigShares := make([][]byte, len(addrs))
 	pubPoly := share.NewPubPoly(suite, nil, a.startRes.Commits)
 
 	var n = len(addrs)
 	var t = a.startRes.getThreshold()
+	if t == 0 {
+		t = 1
+	}
+	sigShares := make([][]byte, t)
 
 	for i := 0; i < t; i++ {
 		src, message, err := receiver.Recv(ctx)
