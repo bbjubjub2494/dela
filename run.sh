@@ -2,10 +2,10 @@
 
 set -e
 
-go install ./dkg/pedersen/dkgcli
+go install -buildvcs=false ./dkg/pedersen/dkgcli
 
 TEMPDIR=$(mktemp -d /tmp/dkgcli.XXXXXXXXXXXXX)
-function rm_tempdir {
+rm_tempdir () {
  rm -rf "$TEMPDIR"
 }
 trap rm_tempdir EXIT
