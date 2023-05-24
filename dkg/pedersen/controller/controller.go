@@ -47,6 +47,10 @@ func (m minimal) SetCommands(builder node.Builder) {
 	)
 	sub.SetAction(builder.MakeAction(setupAction{}))
 
+	sub = cmd.SetSubCommand("get-public-key")
+	sub.SetDescription("Query the collective public key. Outputs in hex")
+	sub.SetAction(builder.MakeAction(getPublicKeyAction{}))
+
 	sub = cmd.SetSubCommand("sign")
 	sub.SetDescription("sign a message. Outputs signature in hex")
 	sub.SetFlags(

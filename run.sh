@@ -2,7 +2,7 @@
 
 set -e
 
-go install -buildvcs=false ./dkg/pedersen/dkgcli
+go install -buildvcs=false ./dkg/pedersen/{dkgcli,dkgclient}
 
 TEMPDIR=$(mktemp -d /tmp/dkgcli.XXXXXXXXXXXXX)
 rm_tempdir () {
@@ -37,6 +37,8 @@ done
 "${cmd[@]}"
 
 message=deadbeef # hexadecimal
+
+dkgcli --config $TEMPDIR/node1 dkg get-public-key
 
 # Sign with all 3 nodes for demo purposes
 for i in $(seq $n); do

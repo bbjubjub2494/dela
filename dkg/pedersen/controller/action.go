@@ -172,6 +172,30 @@ func decodeAuthority(ctx node.Context, str string) (mino.Address, kyber.Point, e
 	return addr, pubkey, nil
 }
 
+type getPublicKeyAction struct{}
+
+func (_ getPublicKeyAction) Execute(ctx node.Context) error {
+	var actor dkg.Actor
+
+	err := ctx.Injector.Resolve(&actor)
+	if err != nil {
+		return xerrors.Errorf(resolveActorFailed, err)
+	}
+
+	pk, err := actor.GetPublicKey()
+	if err != nil {
+		return xerrors.Errorf("failed to query public key: %v", err)
+	}
+
+	data, err := pk.MarshalBinary()
+	if err != nil {
+		return xerrors.Errorf("failed to encode public key: %v", err)
+	}
+	fmt.Fprint(ctx.Out, hex.EncodeToString(data))
+
+	return nil
+}
+
 type signAction struct{}
 
 func (a signAction) Execute(ctx node.Context) error {
