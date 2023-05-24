@@ -10,25 +10,28 @@ rm_tempdir () {
 }
 trap rm_tempdir EXIT
 
-for i in $(seq 3); do
+n=128
+t=$n
+
+for i in $(seq $n); do
 	tmux new-window -d "LLVL=info dkgcli --config $TEMPDIR/node$i start --listen tcp://127.0.0.1:$((2000+i)); read"
 done
 
 sleep 3
 
 # Exchange certificates
-for i in $(seq 2 3); do
+for i in $(seq 2 $n); do
 	dkgcli --config $TEMPDIR/node$i minogrpc join --address //127.0.0.1:2001 $(dkgcli --config $TEMPDIR/node1 minogrpc token)
 done
 
 # Initialize DKG on each node. Do that in a 4th session.
-for i in $(seq 3); do
+for i in $(seq $n); do
 	dkgcli --config $TEMPDIR/node$i dkg listen
 done
 
 # Do the setup in one of the node:
-cmd=(dkgcli --config $TEMPDIR/node1 dkg setup) 
-for i in $(seq 3); do
+cmd=(dkgcli --config $TEMPDIR/node1 dkg setup --threshold $t) 
+for i in $(seq $n); do
     cmd+=(--authority $(cat $TEMPDIR/node$i/dkgauthority))
 done
 "${cmd[@]}"
@@ -36,6 +39,6 @@ done
 message=deadbeef # hexadecimal
 
 # Sign with all 3 nodes for demo purposes
-for i in $(seq 3); do
+for i in $(seq $n); do
 dkgcli --config $TEMPDIR/node$i dkg sign -message $message
 done
