@@ -11,7 +11,7 @@ rm_tempdir () {
 trap rm_tempdir EXIT
 
 n=3
-t=$n
+t=2
 
 for i in $(seq $n); do
 	tmux new-window -d "LLVL=info dkgcli --config $TEMPDIR/node$i start --listen tcp://127.0.0.1:$((2000+i)); read"
