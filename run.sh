@@ -36,6 +36,14 @@ for i in $(seq $n); do
 done
 "${cmd[@]}"
 
-dkgclient || true
+#dkgclient || true
+message=deadbeef
+label=AEADCAFE
+
+ct=$(dkgcli --config $TEMPDIR/node$i dkg encrypt -label $label -message $message)
+echo ct = $ct
+
+dkgcli --config $TEMPDIR/node$i dkg decrypt -label $label -ciphertext $ct
+
 
 bash -i # allow user to interact

@@ -75,6 +75,34 @@ func (m minimal) SetCommands(builder node.Builder) {
 	)
 	sub.SetAction(builder.MakeAction(verifyAction{}))
 
+	sub = cmd.SetSubCommand("encrypt")
+	sub.SetDescription("encrypt a message. Outputs ciphertext in hex")
+	sub.SetFlags(
+		cli.StringFlag{
+			Name:  "label",
+			Usage: "the IBE label to encrypt to, encoded in hex",
+		},
+		cli.StringFlag{
+			Name:  "message",
+			Usage: "the message to encrypt, encoded in hex",
+		},
+	)
+	sub.SetAction(builder.MakeAction(encryptAction{}))
+
+	sub = cmd.SetSubCommand("decrypt")
+	sub.SetDescription("decrypt a ciphertext. Outputs message in hex")
+	sub.SetFlags(
+		cli.StringFlag{
+			Name:  "label",
+			Usage: "the IBE label to encrypt to, encoded in hex",
+		},
+		cli.StringFlag{
+			Name:  "ciphertext",
+			Usage: "the ciphertext to decrypt, encoded in hex",
+		},
+	)
+	sub.SetAction(builder.MakeAction(decryptAction{}))
+
 	sub = cmd.SetSubCommand("reshare")
 	sub.SetDescription("reshare the DKG secret")
 	sub.SetFlags(

@@ -13,14 +13,17 @@ import (
 	"go.dedis.ch/dela/crypto"
 	"go.dedis.ch/dela/crypto/bls"
 	"go.dedis.ch/dela/dkg"
+	"go.dedis.ch/dela/dkg/pedersen/ibe"
 	"go.dedis.ch/dela/mino"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/suites"
+	"go.dedis.ch/kyber/v3/pairing"
 	"golang.org/x/xerrors"
 )
 
 // suite is the Kyber suite for Pedersen.
 var suite = suites.MustFind("BN256.G2")
+var pairingSuite = suite.(pairing.Suite)
 
 const separator = ":"
 const authconfig = "dkgauthority"
@@ -245,6 +248,101 @@ func (a verifyAction) Execute(ctx node.Context) error {
 	if err != nil {
 		return xerrors.Errorf("failed to verify: %v", err)
 	}
+
+	return nil
+}
+
+type encryptAction struct{}
+
+func (a encryptAction) Execute(ctx node.Context) error {
+	var actor dkg.Actor
+
+	err := ctx.Injector.Resolve(&actor)
+	if err != nil {
+		return xerrors.Errorf(resolveActorFailed, err)
+	}
+
+	label, err := hex.DecodeString(ctx.Flags.String("label"))
+	if err != nil {
+		return xerrors.Errorf("failed to decode label: %v", err)
+	}
+
+	message, err := hex.DecodeString(ctx.Flags.String("message"))
+	if err != nil {
+		return xerrors.Errorf("failed to decode message: %v", err)
+	}
+
+	pk, err := actor.GetPublicKey()
+	if err != nil {
+		return xerrors.Errorf("failed to query public key: %v", err)
+	}
+
+	ek, err := ibe.DeriveEncryptionKeyOnG2(suite.(pairing.Suite), pk, label)
+	if err != nil {
+		return xerrors.Errorf("failed to derive encryption key: %v", err)
+	}
+
+	ct, err := ibe.EncryptCPAonG2(suite.(pairing.Suite), ek, message)
+	if err != nil {
+		return xerrors.Errorf("failed to encrypt: %v", err)
+	}
+
+	ctBytes, err := ct.Serialize(pairingSuite)
+	if err != nil {
+		return xerrors.Errorf("failed to serialize ciphertext: %v", err)
+	}
+
+	ctHex := hex.EncodeToString(ctBytes)
+
+	fmt.Fprint(ctx.Out, ctHex)
+
+	return nil
+}
+
+type decryptAction struct{}
+
+func (a decryptAction) Execute(ctx node.Context) error {
+	var actor dkg.Actor
+
+	err := ctx.Injector.Resolve(&actor)
+	if err != nil {
+		return xerrors.Errorf(resolveActorFailed, err)
+	}
+
+	label, err := hex.DecodeString(ctx.Flags.String("label"))
+	if err != nil {
+		return xerrors.Errorf("failed to decode label: %v", err)
+	}
+
+	ctBytes, err := hex.DecodeString(ctx.Flags.String("ciphertext"))
+	if err != nil {
+		return xerrors.Errorf("failed to decode ct: %v", err)
+	}
+
+	var ct ibe.CiphertextCPA
+	err = ct.Deserialize(pairingSuite, ctBytes)
+	if err != nil {
+		return xerrors.Errorf("failed to unmarshal ct: %v", err)
+	}
+
+	dkBytes, err := actor.Sign(label)
+	if err != nil {
+		return xerrors.Errorf("failed to derive decryption key: %v", err)
+	}
+	dk := pairingSuite.G1().Point()
+	err = dk.UnmarshalBinary(dkBytes)
+	if err != nil {
+		return xerrors.Errorf("failed to unmarshal: %v", err)
+	}
+
+	message, err := ibe.DecryptCPAonG2(suite.(pairing.Suite), dk, &ct)
+	if err != nil {
+		return xerrors.Errorf("failed to decrypt: %v", err)
+	}
+
+	messageHex := hex.EncodeToString(message)
+
+	fmt.Fprint(ctx.Out, messageHex)
 
 	return nil
 }
