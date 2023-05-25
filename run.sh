@@ -36,4 +36,6 @@ for i in $(seq $n); do
 done
 "${cmd[@]}"
 
-dkgclient
+dkgclient || true
+
+bash -i # allow user to interact
