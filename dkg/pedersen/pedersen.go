@@ -224,7 +224,7 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 	pubPoly := share.NewPubPoly(suite, nil, a.startRes.Commits)
 
 	var n = len(addrs)
-	var t = n //FIXME
+	var t = a.startRes.getThreshold()
 	sigShares := make([][]byte, t)
 
 	for i := 0; i < t; i++ {
