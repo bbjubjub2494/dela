@@ -23,9 +23,9 @@ import (
 
 var nFlag = flag.String("n", "", "the number of committee members")
 
-func Test_F3B_records(t *testing.T) {
+func Test_IBE_records(t *testing.T) {
 
-	file, err := os.OpenFile("F3B_records.csv", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	file, err := os.OpenFile("IBE_records.csv", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	defer file.Close()
 	if err != nil {
 		log.Fatalln("failed to open file", err)
