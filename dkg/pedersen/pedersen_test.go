@@ -123,7 +123,7 @@ func TestPedersen_Sign(t *testing.T) {
 	rpc := fake.NewStreamRPC(recv, fake.Sender{})
 	actor.rpc = rpc
 
-	sig, err := actor.Sign(msg)
+	sig, _,_, err := actor.Sign(msg)
 	require.NoError(t, err)
 
 	// Expect a valid signature
@@ -190,7 +190,7 @@ func TestPedersen_Scenario(t *testing.T) {
 	}
 
 	// trying to call sign before a setup
-	_, err := actors[0].Sign(message)
+	_, _,_, err := actors[0].Sign(message)
 	require.EqualError(t, err, "you must first initialize DKG. Did you call setup() first?")
 
 	_, err = actors[0].Setup(fakeAuthority, n)
@@ -201,7 +201,7 @@ func TestPedersen_Scenario(t *testing.T) {
 
 	// every node should be able to sign
 	for i := 0; i < n; i++ {
-		_, err := actors[i].Sign(message)
+		_, _,_, err := actors[i].Sign(message)
 		require.NoError(t, err)
 	}
 }

@@ -86,4 +86,6 @@ func (h *Handler) Stream(out mino.Sender, in mino.Receiver) error {
 			return xerrors.Errorf("failed to handle message: %v", err)
 		}
 	}
+
+	return nil
 }

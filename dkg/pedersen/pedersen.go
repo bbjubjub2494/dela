@@ -189,10 +189,10 @@ func (a *Actor) GetPublicKey() (kyber.Point, error) {
 
 // Sign implements dkg.Actor. It gets the private shares of the nodes and
 // signs the message.
-func (a *Actor) Sign(msg []byte) ([]byte, error) {
+func (a *Actor) Sign(msg []byte) ([]byte, int64, int64, error) {
 
 	if !a.startRes.Done() {
-		return nil, xerrors.Errorf(initDkgFirst)
+		return nil, 0,0,xerrors.Errorf(initDkgFirst)
 	}
 
 	players := mino.NewAddresses(a.startRes.getParticipants()...)
@@ -203,7 +203,7 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 
 	sender, receiver, err := a.rpc.Stream(ctx, players)
 	if err != nil {
-		return nil, xerrors.Errorf(failedStreamCreation, err)
+		return nil, 0,0,xerrors.Errorf(failedStreamCreation, err)
 	}
 
 	players = mino.NewAddresses(a.startRes.getParticipants()...)
@@ -216,9 +216,11 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 
 	message := types.NewSignRequest(msg)
 
+	start := time.Now()
+
 	err = <-sender.Send(message, addrs...)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to send decrypt request: %v", err)
+		return nil, 0,0,xerrors.Errorf("failed to send decrypt request: %v", err)
 	}
 
 	pubPoly := share.NewPubPoly(suite, nil, a.startRes.Commits)
@@ -230,26 +232,32 @@ func (a *Actor) Sign(msg []byte) ([]byte, error) {
 	for i := 0; i < t; i++ {
 		src, message, err := receiver.Recv(ctx)
 		if err != nil {
-			return []byte{}, xerrors.Errorf(unexpectedStreamStop, err)
+			return []byte{}, 0,0,xerrors.Errorf(unexpectedStreamStop, err)
 		}
 
 		dela.Logger.Debug().Msgf("Received a signature reply from %v", src)
 
 		signReply, ok := message.(types.SignReply)
 		if !ok {
-			return []byte{}, xerrors.Errorf("got unexpected reply, expected "+
+			return []byte{}, 0,0,xerrors.Errorf("got unexpected reply, expected "+
 				"%T but got: %T", signReply, message)
 		}
 
 		sigShares[i] = signReply.Share
 	}
 
+		receivingSharesTime := time.Since(start).Milliseconds()
+	start = time.Now()
+
 	signature, err := tbls.Recover(suite.(pairing.Suite), pubPoly, msg, sigShares, t, n)
 	if err != nil {
-		return []byte{}, xerrors.Errorf("failed to recover signature: %v", err)
+		return []byte{}, 0, 0, xerrors.Errorf("failed to recover signature: %v", err)
 	}
 
-	return signature, nil
+	
+	decryptionTime := time.Since(start).Milliseconds()
+
+	return signature, receivingSharesTime, decryptionTime, nil
 }
 
 func (a *Actor) Verify(msg, signature []byte) error {

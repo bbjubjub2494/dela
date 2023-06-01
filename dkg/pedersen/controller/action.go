@@ -214,7 +214,7 @@ func (a signAction) Execute(ctx node.Context) error {
 		return xerrors.Errorf("failed to decode message: %v", err)
 	}
 
-	sig, err := actor.Sign(message)
+	sig,_,_, err := actor.Sign(message)
 	if err != nil {
 		return xerrors.Errorf("failed to encrypt: %v", err)
 	}
@@ -325,7 +325,7 @@ func (a decryptAction) Execute(ctx node.Context) error {
 		return xerrors.Errorf("failed to unmarshal ct: %v", err)
 	}
 
-	dkBytes, err := actor.Sign(label)
+	dkBytes,_,_, err := actor.Sign(label)
 	if err != nil {
 		return xerrors.Errorf("failed to derive decryption key: %v", err)
 	}
