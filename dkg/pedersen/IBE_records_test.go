@@ -84,8 +84,8 @@ func Test_IBE_records(t *testing.T) {
 	start := time.Now()
 	_, err = actors[0].Setup(fakeAuthority, threshold)
 	require.NoError(t, err)
-	dkgTime := time.Since(start).Milliseconds()
-	row = append(row, strconv.Itoa(int(dkgTime)))
+	dkgTime := time.Since(start).Seconds()
+	row = append(row, strconv.FormatFloat(dkgTime, 'f', 3, 64))
 
 	//generating random messages in batch and encrypt them
 

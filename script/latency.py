@@ -6,7 +6,7 @@ from numpy import genfromtxt
 from tool import *
 import csv
 
-data = read_datafile('./data/latency.csv')
+data = read_datafile('./data/IBE_records.csv')
 
 x= data[:,0]
 y1= data[:,1]
@@ -37,4 +37,4 @@ for label in (ax.get_xticklabels() + ax.get_yticklabels()):
 
 ax.legend((rects1[0], rects2[0],rects3[0]), ('DKG Setup','Write Transaction','Key Reconstruction'), loc=2,fontsize=0.8*fs_label)
 plt.tight_layout()
-save_pdf("latency.pdf")
+save_pdf("IBE_latency.pdf")
