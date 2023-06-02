@@ -85,7 +85,6 @@ func Test_IBE_records(t *testing.T) {
 	_, err = actors[0].Setup(fakeAuthority, threshold)
 	require.NoError(t, err)
 	dkgTime := time.Since(start).Seconds()
-	row = append(row, strconv.FormatFloat(dkgTime, 'f', 3, 64))
 
 	//generating random messages in batch and encrypt them
 
@@ -96,8 +95,9 @@ func Test_IBE_records(t *testing.T) {
 	}
 	_, recvTime, combineTime, err := actors[0].Sign(msg)
 	require.NoError(t, err)
-	row = append(row, strconv.Itoa(int(recvTime)))
-	row = append(row, strconv.Itoa(int(combineTime)))
+	row = append(row, strconv.FormatFloat(dkgTime, 'f', 3, 64))
+	row = append(row, strconv.FormatFloat(recvTime, 'f', 3, 64))
+	row = append(row, strconv.FormatFloat(combineTime, 'f', 3, 64))
 
 	if err := w.Write(row); err != nil {
 		log.Fatalln("error writing record to file", err)

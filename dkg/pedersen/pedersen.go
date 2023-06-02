@@ -189,7 +189,7 @@ func (a *Actor) GetPublicKey() (kyber.Point, error) {
 
 // Sign implements dkg.Actor. It gets the private shares of the nodes and
 // signs the message.
-func (a *Actor) Sign(msg []byte) ([]byte, int64, int64, error) {
+func (a *Actor) Sign(msg []byte) ([]byte, float64, float64, error) {
 
 	if !a.startRes.Done() {
 		return nil, 0,0,xerrors.Errorf(initDkgFirst)
@@ -246,7 +246,7 @@ func (a *Actor) Sign(msg []byte) ([]byte, int64, int64, error) {
 		sigShares[i] = signReply.Share
 	}
 
-		receivingSharesTime := time.Since(start).Milliseconds()
+		receivingSharesTime := time.Since(start).Seconds()
 	start = time.Now()
 
 	signature, err := tbls.Recover(suite.(pairing.Suite), pubPoly, msg, sigShares, t, n)
@@ -255,7 +255,7 @@ func (a *Actor) Sign(msg []byte) ([]byte, int64, int64, error) {
 	}
 
 	
-	decryptionTime := time.Since(start).Milliseconds()
+	decryptionTime := time.Since(start).Seconds()
 
 	return signature, receivingSharesTime, decryptionTime, nil
 }
