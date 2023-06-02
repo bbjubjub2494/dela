@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"time"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -78,9 +79,13 @@ func Test_IBE_records(t *testing.T) {
 		actors[i] = actor
 	}
 
+	w.Write([]string{"n","dkgTime","recvTime","combineTime"})
 	fmt.Println("setting up the dkg ...")
+	start := time.Now()
 	_, err = actors[0].Setup(fakeAuthority, threshold)
 	require.NoError(t, err)
+	dkgTime := time.Since(start).Milliseconds()
+	row = append(row, strconv.Itoa(int(dkgTime)))
 
 	//generating random messages in batch and encrypt them
 
