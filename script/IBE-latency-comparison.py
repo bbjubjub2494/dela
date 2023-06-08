@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from numpy import genfromtxt
 from tool import *
 import pandas as pd
+import os.path
 # We consider 5 different secret committee sizes : 8 16 32 64 128
 m = 5
 
@@ -90,4 +91,4 @@ ax.legend((rects5[0], rects4[0]), ('TDH2','IBE'), loc=2,fontsize=0.7*fs_label)
 fig.gca().add_artist(l1)
 plt.tight_layout()
 destination = "../resources/"
-save_pdf("IBE-latency-comparison.pdf")
+save_pdf(f"{os.path.splitext(os.path.basename(__file__))[0]}.pdf")
