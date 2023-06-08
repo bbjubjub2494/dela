@@ -36,7 +36,6 @@ meanDf2 = pd.DataFrame(dfList2)
 receivingSharesTime = meanDf[2]
 # Key Reconstruction time
 keyReconstructionTime = meanDf[3]
-eth = [0.001] * m
 
 
 # Recieving shares time for batchsize 1
@@ -68,11 +67,9 @@ rects02 = ax.bar(ind + 2*width, receivingSharesTime2, width, color=red[1], edgec
 rects1 = ax.bar(ind + 3*width, receivingSharesTime, width, color=red[1], edgecolor=red[0])
 rects12 = ax.bar(ind + 4*width, decryptionTime2, width, color=green[1], edgecolor=green[0], hatch='//')
 rects2 = ax.bar(ind + 5*width, keyReconstructionTime, width, color=green[1], edgecolor=green[0])
-rects3 = ax.bar(ind + 6*width, eth, width, color=yellow[1], edgecolor=yellow[0])
 # use the 2 legendsample for the legend, use no hatch and '//', and no color for the legend
 rects5 = ax.bar(ind , legendsample, width, hatch='//', color='w', edgecolor='k')
 rects4 = ax.bar(ind , legendsample, width, color='w', edgecolor='k')
-rects6 = ax.bar(ind , legendsample, width, color=yellow[1], edgecolor=yellow[0] )
 
 
 # add some text for labels, title and axes ticks
@@ -88,8 +85,8 @@ ax.yaxis.set_major_formatter(plt.FuncFormatter(format_func))
 for label in (ax.get_xticklabels() + ax.get_yticklabels()):
     label.set_fontsize(1.2*fs_axis)
 
-l1 = ax.legend((rects1[0],  rects2[0] , rects3[0]), ('Shares Preparation by Trustees','Key Reconstruction' , "Decryption and Execution"), loc=1,fontsize=0.7*fs_label)
-ax.legend((rects5[0], rects4[0], rects6[0]), ('TDH2','IBE', 'Both Protocols'), loc=2,fontsize=0.7*fs_label)
+l1 = ax.legend((rects1[0],  rects2[0]), ('Shares Preparation by Trustees','Key Reconstruction'), loc=1,fontsize=0.7*fs_label)
+ax.legend((rects5[0], rects4[0]), ('TDH2','IBE'), loc=2,fontsize=0.7*fs_label)
 fig.gca().add_artist(l1)
 plt.tight_layout()
 destination = "../resources/"
