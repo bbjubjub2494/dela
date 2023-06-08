@@ -35,6 +35,6 @@ ax.yaxis.set_major_formatter(plt.FuncFormatter(format_func))
 for label in (ax.get_xticklabels() + ax.get_yticklabels()):
     label.set_fontsize(0.8*fs_axis)
 
-ax.legend((rects1[0], rects2[0]), ('IBE','TDH2'), loc=2,fontsize=0.8*fs_label)
+ax.legend((rects1[0], rects2[0]), ('BN256','Ed25519'), loc=2,fontsize=0.8*fs_label)
 plt.tight_layout()
 save_pdf(f"{os.path.splitext(os.path.basename(__file__))[0]}.pdf")
